@@ -1,6 +1,6 @@
 import { apiCall, type EsimPackage } from "./client";
 
-const MARKUP = 1.25; // 25% markup, tax included
+const MARKUP = 1.20; // 20% markup, tax included
 
 export interface CountryCoverage {
   locationName: string;
