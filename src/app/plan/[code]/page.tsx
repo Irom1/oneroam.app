@@ -1,6 +1,7 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { fetchPackages, buildDisplayPlan } from "@/lib/esimaccess/catalog";
+import { PlanPageContent } from "./plan-content";
 
 type Props = { params: Promise<{ code: string }> };
 
@@ -34,5 +35,20 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function PlanPage({ params }: Props) {
   const { code } = await params;
-  redirect(`/?plan=${code}`);
+
+  return (
+    <Suspense
+      fallback={
+        <div className="mx-auto max-w-3xl px-3 sm:px-6 pt-20 pb-24">
+          <div className="space-y-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="rounded-xl border border-border bg-card p-4 h-24 animate-pulse" />
+            ))}
+          </div>
+        </div>
+      }
+    >
+      <PlanPageContent initialPlanCode={code} />
+    </Suspense>
+  );
 }

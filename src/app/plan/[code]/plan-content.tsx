@@ -19,7 +19,11 @@ const STRIPE_KEY =
   "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00Ph4nPLfM";
 const stripePromise = loadStripe(STRIPE_KEY);
 
-export function HomeContent() {
+export function PlanPageContent({
+  initialPlanCode,
+}: {
+  initialPlanCode: string;
+}) {
   const router = useRouter();
 
   const [plans, setPlans] = useState<DisplayPlan[]>([]);
@@ -27,29 +31,38 @@ export function HomeContent() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [search, setSearch] = useState("");
+  const [autoOpened, setAutoOpened] = useState(false);
 
   useEffect(() => {
     fetch("/api/plans")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setPlans(
-            data
-              .filter(
-                (p: DisplayPlan) =>
-                  p.dataAmountGb >= MIN_GB &&
-                  p.dataAmountGb <= MAX_GB &&
-                  p.validityDays >= MIN_DAYS
-              )
-              .sort((a, b) => a.priceCents - b.priceCents)
-          );
+          const filtered = data
+            .filter(
+              (p: DisplayPlan) =>
+                p.dataAmountGb >= MIN_GB &&
+                p.dataAmountGb <= MAX_GB &&
+                p.validityDays >= MIN_DAYS
+            )
+            .sort((a, b) => a.priceCents - b.priceCents);
+          setPlans(filtered);
+
+          // Auto-open the plan from the URL
+          if (!autoOpened) {
+            const match = filtered.find((p) => p.id === initialPlanCode);
+            if (match) {
+              setDetailPlan(match);
+              setAutoOpened(true);
+            }
+          }
         } else {
           setError(data.error || "Failed to load plans");
         }
       })
       .catch(() => setError("Could not load plans"))
       .finally(() => setLoading(false));
-  }, []);
+  }, [initialPlanCode, autoOpened]);
 
   const selectPlan = useCallback(
     (plan: DisplayPlan) => {
