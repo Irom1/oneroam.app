@@ -1,6 +1,6 @@
 "use client";
 
-import { X, Globe, Signal, Shield, CreditCard } from "lucide-react";
+import { X, Globe, Signal, Shield } from "lucide-react";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 import { formatPrice, formatDataAmount } from "@/lib/utils";
 
@@ -108,14 +108,9 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
             </div>
           </div>
 
-          {/* Buy button inside modal — payment bar is at z-[60] above this z-50 */}
-          <button
-            onClick={onBuy}
-            className="w-full flex items-center justify-center gap-2 bg-[#1a1a1a] text-white rounded-xl py-3 font-medium text-sm hover:bg-[#333] transition-colors"
-          >
-            <CreditCard className="h-4 w-4" />
-            Buy with Apple Pay / Google Pay
-          </button>
+          <p className="text-xs text-center text-muted-foreground pt-2 pb-1">
+            Close this to pay with Apple Pay or Google Pay below
+          </p>
         </div>
 
         <div className="h-4" />
