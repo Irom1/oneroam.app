@@ -6,7 +6,7 @@ export function HeroSection() {
           Travel eSIM
         </h1>
         <p className="mt-3 text-base text-muted-foreground sm:text-lg max-w-md mx-auto leading-relaxed">
-          Instant data abroad. No signup, no cart — just tap, pay, and go.
+          Instant travel data. Half the cost of Airalo, Holafly, and Saily — fair prices, no markup games.
         </p>
       </div>
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_40%_at_50%_30%,#a8d8ea20,transparent_100%)]" />
