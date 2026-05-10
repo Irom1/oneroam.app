@@ -45,6 +45,7 @@ export async function POST(request: Request) {
       amount: plan.priceCents,
       currency: "usd",
       receipt_email: email || undefined,
+      automatic_payment_methods: { enabled: true },
       metadata: {
         orderId,
         packageCode: plan.id,

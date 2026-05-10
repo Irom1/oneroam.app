@@ -191,11 +191,13 @@ function ModalPaymentButton({
       try {
         const email = ev.payerEmail || "";
         const { clientSecret, paymentIntentId } = await createPaymentIntent(email);
-        const { error: confirmError } = await stripe.confirmCardPayment(
+        const { error: confirmError } = await stripe.confirmPayment({
           clientSecret,
-          { payment_method: ev.paymentMethod.id },
-          { handleActions: false }
-        );
+          confirmParams: {
+            payment_method: ev.paymentMethod.id,
+          },
+          redirect: "if_required",
+        });
         if (confirmError) {
           ev.complete("fail");
           setError(confirmError.message || "Payment failed");
