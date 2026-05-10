@@ -85,16 +85,11 @@ export function SuccessContent() {
       {/* QR code — long press to add eSIM on iOS 17+ */}
       {esim?.qrCodeUrl && (
         <div className="space-y-1">
-          <a
-            href={esim.qrCodeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="block bg-white rounded-2xl border-2 border-[#7ecb8a]/30 hover:border-[#7ecb8a] transition-colors p-4 mx-auto max-w-[220px]"
-          >
-            <img src={esim.qrCodeUrl} alt="eSIM QR Code — long press to add" className="w-full h-auto" />
-          </a>
+          <div className="bg-white rounded-2xl border-2 border-[#7ecb8a]/30 p-4 mx-auto max-w-[220px]">
+            <img src={esim.qrCodeUrl} alt="eSIM QR Code — long press to install" className="w-full h-auto" />
+          </div>
           <p className="text-[11px] text-muted-foreground">
-            Tap to open full size &middot; long press to add eSIM
+            Long press the QR code to install eSIM
           </p>
         </div>
       )}
