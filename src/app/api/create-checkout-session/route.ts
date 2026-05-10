@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { getPlans, createPendingOrder, createOrderItems, updateOrderStripeSession, isOrderNumberUnique } from "@/lib/d1/data";
 import { stripe } from "@/lib/stripe/server";
+import type { PlanWithCountry } from "@/lib/types";
 
 const requestSchema = z.object({
   items: z
     .array(
       z.object({
-        planId: z.string().uuid(),
+        planId: z.string().min(1),
         quantity: z.number().int().min(1).max(10),
       })
     )
@@ -36,35 +37,21 @@ export async function POST(request: Request) {
     }
 
     const { items, email } = parsed.data;
-    const supabase = await createClient();
 
-    // Fetch all requested plans with country info
+    // Fetch all requested plans
     const planIds = items.map((i) => i.planId);
-    const { data: plans, error: plansError } = await supabase
-      .from("plans")
-      .select("*, country:countries(*)")
-      .in("id", planIds)
-      .eq("is_active", true);
+    const allPlans = await getPlans();
+    const planMap = new Map<string, PlanWithCountry>(
+      allPlans.map((p) => [p.id, p])
+    );
 
-    if (plansError || !plans) {
+    // Validate all plans found
+    const missingIds = planIds.filter((id) => !planMap.has(id));
+    if (missingIds.length > 0) {
       return NextResponse.json(
-        { error: "Failed to fetch plans" },
-        { status: 500 }
+        { error: "One or more plans are no longer available." },
+        { status: 400 }
       );
-    }
-
-    // Validate all plans found and active
-    const planMap = new Map(plans.map((p) => [p.id, p]));
-    for (const item of items) {
-      const plan = planMap.get(item.planId);
-      if (!plan) {
-        return NextResponse.json(
-          {
-            error: `Plan ${item.planId} is no longer available. Please remove it from your cart.`,
-          },
-          { status: 400 }
-        );
-      }
     }
 
     // Calculate total
@@ -73,61 +60,29 @@ export async function POST(request: Request) {
       return sum + plan.price_cents * item.quantity;
     }, 0);
 
-    // Generate unique order number (retry up to 5 times)
+    // Generate unique order number
     let orderNumber = "";
     for (let attempt = 0; attempt < 5; attempt++) {
       orderNumber = generateOrderNumber();
-      const { count } = await supabase
-        .from("orders")
-        .select("*", { count: "exact", head: true })
-        .eq("order_number", orderNumber);
-      if (count === 0) break;
+      if (await isOrderNumberUnique(orderNumber)) break;
     }
 
     // Create order
-    const { data: order, error: orderError } = await supabase
-      .from("orders")
-      .insert({
-        order_number: orderNumber,
-        customer_email: email,
-        status: "pending",
-        total_cents: totalCents,
-        currency: "usd",
-      })
-      .select()
-      .single();
-
-    if (orderError || !order) {
-      return NextResponse.json(
-        { error: "Failed to create order" },
-        { status: 500 }
-      );
-    }
+    const orderId = await createPendingOrder(orderNumber, email, totalCents);
 
     // Create order items
-    const orderItems = items.map((item) => {
-      const plan = planMap.get(item.planId)!;
-      return {
-        order_id: order.id,
-        plan_id: item.planId,
-        quantity: item.quantity,
-        unit_price_cents: plan.price_cents,
-        subtotal_cents: plan.price_cents * item.quantity,
-      };
-    });
-
-    const { error: itemsError } = await supabase
-      .from("order_items")
-      .insert(orderItems);
-
-    if (itemsError) {
-      // Clean up the orphaned order
-      await supabase.from("orders").delete().eq("id", order.id);
-      return NextResponse.json(
-        { error: "Failed to create order items" },
-        { status: 500 }
-      );
-    }
+    await createOrderItems(
+      orderId,
+      items.map((item) => {
+        const plan = planMap.get(item.planId)!;
+        return {
+          planId: item.planId,
+          quantity: item.quantity,
+          unitPriceCents: plan.price_cents,
+          subtotalCents: plan.price_cents * item.quantity,
+        };
+      })
+    );
 
     // Build Stripe line items
     const lineItems = items.map((item) => {
@@ -159,16 +114,13 @@ export async function POST(request: Request) {
       success_url: `${baseUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/cart`,
       metadata: {
-        order_id: order.id,
+        order_id: orderId,
         order_number: orderNumber,
       },
     });
 
     // Link Stripe session to order
-    await supabase
-      .from("orders")
-      .update({ stripe_session_id: session.id })
-      .eq("id", order.id);
+    await updateOrderStripeSession(orderId, session.id);
 
     return NextResponse.json({ url: session.url });
   } catch (error) {

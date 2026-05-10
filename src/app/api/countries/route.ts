@@ -1,17 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getCountries } from "@/lib/d1/data";
 
 export async function GET() {
-  const supabase = await createClient();
-
-  const { data, error } = await supabase
-    .from("countries")
-    .select("*")
-    .order("name");
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  try {
+    const countries = await getCountries();
+    return NextResponse.json(countries);
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch countries" }, { status: 500 });
   }
-
-  return NextResponse.json(data);
 }

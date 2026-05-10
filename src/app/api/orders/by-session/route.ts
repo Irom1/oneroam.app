@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getOrderBySessionId, updateOrderCompleted } from "@/lib/d1/data";
 import { stripe } from "@/lib/stripe/server";
 
 export async function GET(request: Request) {
@@ -13,56 +13,38 @@ export async function GET(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  try {
+    const order = await getOrderBySessionId(sessionId);
+    if (!order) {
+      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+    }
 
-  const { data: order, error } = await supabase
-    .from("orders")
-    .select("*, items:order_items(*, plan:plans(*, country:countries(*)))")
-    .eq("stripe_session_id", sessionId)
-    .single();
+    // Already completed
+    if (order.status === "completed") {
+      return NextResponse.json(order);
+    }
 
-  if (error || !order) {
-    return NextResponse.json(
-      { error: "Order not found" },
-      { status: 404 }
-    );
-  }
-
-  // If order is already completed, return immediately
-  if (order.status === "completed") {
-    return NextResponse.json(order);
-  }
-
-  // If still pending, verify with Stripe directly (catches payments before webhook)
-  if (order.status === "pending") {
-    try {
-      const session = await stripe.checkout.sessions.retrieve(sessionId);
-
-      if (session.payment_status === "paid") {
-        const { error: updateError } = await supabase
-          .from("orders")
-          .update({
-            status: "completed",
-            stripe_payment_intent_id:
-              typeof session.payment_intent === "string"
-                ? session.payment_intent
-                : session.payment_intent?.id || null,
-          })
-          .eq("id", order.id)
-          .eq("status", "pending");
-
-        if (!updateError) {
-          order.status = "completed";
-          order.stripe_payment_intent_id =
+    // If still pending, verify with Stripe directly
+    if (order.status === "pending") {
+      try {
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        if (session.payment_status === "paid") {
+          const paymentIntentId =
             typeof session.payment_intent === "string"
               ? session.payment_intent
               : session.payment_intent?.id || null;
-        }
-      }
-    } catch {
-      // Stripe API call failed — return whatever we have in the DB
-    }
-  }
 
-  return NextResponse.json(order);
+          await updateOrderCompleted(order.id, paymentIntentId);
+          order.status = "completed";
+          order.stripe_payment_intent_id = paymentIntentId;
+        }
+      } catch {
+        // Stripe API call failed — return whatever we have
+      }
+    }
+
+    return NextResponse.json(order);
+  } catch {
+    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 });
+  }
 }

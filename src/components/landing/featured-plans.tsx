@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { buttonVariants } from "@/components/ui/button";
 import { PlanCard } from "@/components/plans/plan-card";
-import { createClient } from "@/lib/supabase/server";
+import { getPlans } from "@/lib/d1/data";
 import { cn } from "@/lib/utils";
 import type { PlanWithCountry } from "@/lib/types";
 
@@ -11,14 +11,7 @@ export async function FeaturedPlans() {
   let error = false;
 
   try {
-    const supabase = await createClient();
-    const { data } = await supabase
-      .from("plans")
-      .select("*, country:countries(*)")
-      .eq("is_active", true)
-      .eq("popular", true)
-      .limit(3);
-    plans = (data as PlanWithCountry[]) || [];
+    plans = await getPlans({ popular: true, limit: 3 });
   } catch {
     error = true;
   }
@@ -48,7 +41,7 @@ export async function FeaturedPlans() {
 
         {error ? (
           <p className="text-muted-foreground text-sm">
-            Could not load plans. Please check your Supabase configuration.
+            Could not load plans. Please check your configuration.
           </p>
         ) : plans.length === 0 ? (
           <p className="text-muted-foreground text-sm">

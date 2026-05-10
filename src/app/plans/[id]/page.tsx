@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
 import { PlanDetail } from "@/components/plans/plan-detail";
+import { getPlanById } from "@/lib/d1/data";
 import type { PlanWithCountry } from "@/lib/types";
 
 type Props = {
@@ -10,31 +10,17 @@ type Props = {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: plan } = await supabase
-    .from("plans")
-    .select("*, country:countries(*)")
-    .eq("id", id)
-    .single();
-
+  const plan = await getPlanById(id);
   if (!plan) return { title: "Plan Not Found" };
-
-  const p = plan as PlanWithCountry;
   return {
-    title: `${p.name} — ${p.country.name}`,
-    description: p.description,
+    title: `${plan.name} — ${plan.country.name}`,
+    description: plan.description,
   };
 }
 
 export default async function PlanDetailPage({ params }: Props) {
   const { id } = await params;
-  const supabase = await createClient();
-  const { data: plan } = await supabase
-    .from("plans")
-    .select("*, country:countries(*)")
-    .eq("id", id)
-    .single();
-
+  const plan = await getPlanById(id);
   if (!plan) notFound();
 
   return (

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { createClient } from "@/lib/supabase/server";
+import { getOrderByNumberAndEmail } from "@/lib/d1/data";
 
 const requestSchema = z.object({
   email: z.string().email(),
@@ -19,16 +19,12 @@ export async function POST(request: Request) {
     }
 
     const { email, orderNumber } = parsed.data;
-    const supabase = await createClient();
+    const order = await getOrderByNumberAndEmail(
+      orderNumber.toUpperCase(),
+      email
+    );
 
-    const { data: order, error } = await supabase
-      .from("orders")
-      .select("*, items:order_items(*, plan:plans(*, country:countries(*)))")
-      .eq("order_number", orderNumber.toUpperCase())
-      .eq("customer_email", email.toLowerCase().trim())
-      .single();
-
-    if (error || !order) {
+    if (!order) {
       return NextResponse.json(
         { error: "No order found with that email and order number." },
         { status: 404 }

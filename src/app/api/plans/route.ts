@@ -1,28 +1,14 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { getPlans } from "@/lib/d1/data";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const countryId = searchParams.get("country_id");
+  const countryId = searchParams.get("country_id") || undefined;
 
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("plans")
-    .select("*, country:countries(*)")
-    .eq("is_active", true)
-    .order("coverage_type", { ascending: true })
-    .order("price_cents", { ascending: true });
-
-  if (countryId) {
-    query = query.eq("country_id", countryId);
+  try {
+    const plans = await getPlans({ countryId });
+    return NextResponse.json(plans);
+  } catch (error) {
+    return NextResponse.json({ error: "Failed to fetch plans" }, { status: 500 });
   }
-
-  const { data, error } = await query;
-
-  if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
-  }
-
-  return NextResponse.json(data);
 }

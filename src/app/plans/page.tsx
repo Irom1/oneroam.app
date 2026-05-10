@@ -1,10 +1,10 @@
 import { Suspense } from "react";
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
 import { PlanList } from "@/components/plans/plan-list";
 import { SearchBar } from "@/components/search/search-bar";
 import { CountrySelector } from "@/components/search/country-selector";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getPlans, getCountries } from "@/lib/d1/data";
 import type { Country, PlanWithCountry } from "@/lib/types";
 
 export const metadata: Metadata = {
@@ -26,32 +26,29 @@ export default async function PlansPage({ searchParams }: Props) {
         Find the perfect eSIM for your trip.
       </p>
 
-      {/* Filter bar — client components wrapped in Suspense */}
       <div className="mt-6 flex flex-col sm:flex-row gap-3">
         <Suspense fallback={<Skeleton className="h-10 w-full sm:w-64" />}>
           <FilterBar />
         </Suspense>
       </div>
 
-      {/* Plans grid */}
       <div className="mt-8">
-        <PlansGrid countryId={params.country_id} search={params.search} />
+        <PlansGrid
+          countryId={params.country_id}
+          search={params.search}
+        />
       </div>
     </div>
   );
 }
 
 async function FilterBar() {
-  const supabase = await createClient();
-  const { data: countries } = await supabase
-    .from("countries")
-    .select("*")
-    .order("name");
+  const countries = await getCountries();
 
   return (
     <>
       <SearchBar />
-      <CountrySelector countries={(countries as Country[]) || []} />
+      <CountrySelector countries={countries as Country[]} />
     </>
   );
 }
@@ -63,24 +60,12 @@ async function PlansGrid({
   countryId?: string;
   search?: string;
 }) {
-  const supabase = await createClient();
-
-  let query = supabase
-    .from("plans")
-    .select("*, country:countries(*)")
-    .eq("is_active", true)
-    .order("coverage_type", { ascending: true })
-    .order("price_cents", { ascending: true });
-
-  if (countryId) {
-    query = query.eq("country_id", countryId);
+  let plans: PlanWithCountry[] = [];
+  try {
+    plans = await getPlans({ countryId, search });
+  } catch {
+    // error handled by empty state
   }
 
-  if (search) {
-    query = query.ilike("name", `%${search}%`);
-  }
-
-  const { data: plans } = await query;
-
-  return <PlanList plans={(plans as PlanWithCountry[]) || []} />;
+  return <PlanList plans={plans} />;
 }

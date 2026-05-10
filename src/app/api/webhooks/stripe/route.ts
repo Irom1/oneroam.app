@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe/server";
-import { createClient } from "@/lib/supabase/server";
+import { updateOrderCompleted, updateOrderFailedBySession } from "@/lib/d1/data";
 import type Stripe from "stripe";
 
 export async function POST(request: Request) {
@@ -31,44 +31,32 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = await createClient();
+  try {
+    switch (event.type) {
+      case "checkout.session.completed": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        const orderId = session.metadata?.order_id;
+        if (!orderId) break;
 
-  switch (event.type) {
-    case "checkout.session.completed": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      const orderId = session.metadata?.order_id;
+        const paymentIntentId =
+          typeof session.payment_intent === "string"
+            ? session.payment_intent
+            : session.payment_intent?.id || null;
 
-      if (!orderId) break;
-
-      // Only update if still pending (idempotent)
-      const { error } = await supabase
-        .from("orders")
-        .update({
-          status: "completed",
-          stripe_payment_intent_id:
-            typeof session.payment_intent === "string"
-              ? session.payment_intent
-              : session.payment_intent?.id,
-        })
-        .eq("id", orderId)
-        .eq("status", "pending");
-
-      if (error) {
-        console.error("Failed to update order:", error);
+        await updateOrderCompleted(orderId, paymentIntentId);
+        break;
       }
-      break;
-    }
 
-    case "checkout.session.expired": {
-      const session = event.data.object as Stripe.Checkout.Session;
-      if (session.id) {
-        await supabase
-          .from("orders")
-          .update({ status: "failed" })
-          .eq("stripe_session_id", session.id);
+      case "checkout.session.expired": {
+        const session = event.data.object as Stripe.Checkout.Session;
+        if (session.id) {
+          await updateOrderFailedBySession(session.id);
+        }
+        break;
       }
-      break;
     }
+  } catch (error) {
+    console.error("Webhook processing error:", error);
   }
 
   return NextResponse.json({ received: true });
