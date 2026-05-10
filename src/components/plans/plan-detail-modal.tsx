@@ -29,8 +29,14 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
       />
 
       <div className="relative w-full sm:max-w-lg bg-card rounded-t-3xl sm:rounded-3xl border border-border shadow-2xl max-h-[85vh] overflow-y-auto">
-        <div className="flex justify-center pt-3 pb-1 sm:hidden">
-          <div className="w-10 h-1 rounded-full bg-border" />
+        <div className="flex justify-center pt-2 pb-1 sm:hidden">
+          <button
+            onClick={onClose}
+            className="w-12 h-7 flex items-center justify-center"
+            aria-label="Dismiss"
+          >
+            <span className="w-8 h-1 rounded-full bg-border" />
+          </button>
         </div>
 
         {/* Header */}
