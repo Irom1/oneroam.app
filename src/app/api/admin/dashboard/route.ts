@@ -18,6 +18,7 @@ export async function GET() {
       amountCents: o.amount_cents,
       status: o.status,
       esimOrderNo: o.esimaccess_order_no,
+      stripePaymentIntentId: o.stripe_payment_intent_id,
       createdAt: o.created_at,
     }));
 
