@@ -2,8 +2,13 @@ import { NextResponse } from "next/server";
 import { queryOne } from "@/lib/d1/client";
 import { queryEsim } from "@/lib/esimaccess/order";
 import { sendEsimEmail } from "@/lib/email";
+import { verifyAdmin } from "@/lib/admin-auth";
 
 export async function POST(request: Request) {
+  const credId = request.headers.get("x-admin-credential") || "";
+  if (!(await verifyAdmin(credId))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
   try {
     const { orderId } = await request.json();
     const order = await queryOne<Record<string, unknown>>(

@@ -3,12 +3,13 @@
 // Base: https://api.esimaccess.com/api/v1/open
 
 const BASE = "https://api.esimaccess.com/api/v1/open";
-const ACCESS_CODE = "a952f8cdeb894245a9712a6819785e03";
+const ACCESS_CODE = process.env.ESIM_ACCESS_CODE || "";
 
 export async function apiCall<T = unknown>(
   path: string,
   body: Record<string, unknown> = {}
 ): Promise<T> {
+  if (!ACCESS_CODE) throw new Error("ESIM_ACCESS_CODE not configured");
   const res = await fetch(`${BASE}${path}`, {
     method: "POST",
     headers: {

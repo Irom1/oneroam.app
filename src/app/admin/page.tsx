@@ -68,9 +68,15 @@ export default function AdminPage() {
     setAuthing(false);
   }, []);
 
-  const fetchData = useCallback(() => {
-    fetch("/api/admin/dashboard").then(r => r.json()).then(setData).catch(() => {});
+  const adminHeaders = useCallback(() => {
+    const cred = localStorage.getItem("oneroam_admin_credential") || "";
+    return { "x-admin-credential": cred };
   }, []);
+
+  const fetchData = useCallback(() => {
+    fetch("/api/admin/dashboard", { headers: adminHeaders() })
+      .then(r => r.json()).then(setData).catch(() => {});
+  }, [adminHeaders]);
 
   useEffect(() => { authenticate(); }, [authenticate]);
   useEffect(() => { if (authed) fetchData(); }, [authed, fetchData]);
@@ -185,9 +191,14 @@ function OrderModal({ order, onClose }: { order: Order; onClose: () => void }) {
   const [actionMsg, setActionMsg] = useState("");
   const [actionLoading, setActionLoading] = useState("");
 
+  const ah = () => {
+    const cred = localStorage.getItem("oneroam_admin_credential") || "";
+    return { "Content-Type": "application/json", "x-admin-credential": cred };
+  };
+
   const resendEmail = async () => {
     setActionLoading("resend"); setActionMsg("");
-    const res = await fetch("/api/admin/resend-email", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id }) });
+    const res = await fetch("/api/admin/resend-email", { method: "POST", headers: ah(), body: JSON.stringify({ orderId: order.id }) });
     const d = await res.json();
     setActionMsg(d.ok ? "Email sent!" : d.error || "Failed");
     setActionLoading("");
@@ -196,7 +207,7 @@ function OrderModal({ order, onClose }: { order: Order; onClose: () => void }) {
 
   const reprovision = async () => {
     setActionLoading("reprovision"); setActionMsg("");
-    const res = await fetch("/api/admin/reprovision", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ orderId: order.id }) });
+    const res = await fetch("/api/admin/reprovision", { method: "POST", headers: ah(), body: JSON.stringify({ orderId: order.id }) });
     const d = await res.json();
     setActionMsg(d.ok ? `Reprovisioned: ${d.orderNo}` : d.error || "Failed");
     setActionLoading("");
@@ -205,7 +216,7 @@ function OrderModal({ order, onClose }: { order: Order; onClose: () => void }) {
 
   const stripePi = order.stripePaymentIntentId;
   const stripeUrl = stripePi?.startsWith("pi_") ? `https://dashboard.stripe.com/payments/${stripePi}` : null;
-  const topupUrl = order.email ? `/topup?email=${encodeURIComponent(order.email)}` : null;
+  const topupUrl = order.esimOrderNo ? `/topup?order=${encodeURIComponent(order.esimOrderNo)}` : null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">

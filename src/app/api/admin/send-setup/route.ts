@@ -1,17 +1,8 @@
 import { NextResponse } from "next/server";
 import { query, generateId } from "@/lib/d1/client";
 
-function generateToken(): string {
-  const chars = "abcdefghijklmnopqrstuvwxyz0123456789";
-  let result = "";
-  for (let i = 0; i < 32; i++) {
-    result += chars[Math.floor(Math.random() * chars.length)];
-  }
-  return result;
-}
-
 export async function POST() {
-  const token = generateToken();
+  const token = crypto.randomUUID();
   const id = generateId();
 
   await query(

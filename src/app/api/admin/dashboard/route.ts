@@ -2,8 +2,14 @@ import { NextResponse } from "next/server";
 import { query } from "@/lib/d1/client";
 import { apiCall } from "@/lib/esimaccess/client";
 import { getStripe } from "@/lib/stripe/server";
+import { verifyAdmin } from "@/lib/admin-auth";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const credId = request.headers.get("x-admin-credential") || "";
+  if (!(await verifyAdmin(credId))) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     // Recent orders
     const ordersResult = await query<Record<string, unknown>>(

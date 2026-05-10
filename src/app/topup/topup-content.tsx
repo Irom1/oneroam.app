@@ -23,6 +23,7 @@ interface UsageData {
 export function TopupContent() {
   const searchParams = useSearchParams();
   const iccidParam = searchParams.get("iccid") || "";
+  const orderParam = searchParams.get("order") || "";
 
   const [iccid, setIccid] = useState(iccidParam);
   const [plans, setPlans] = useState<DisplayPlan[]>([]);
@@ -31,13 +32,28 @@ export function TopupContent() {
   const [error, setError] = useState("");
   const [detailPlan, setDetailPlan] = useState<DisplayPlan | null>(null);
 
-  // Auto-load if ICCID from email link
+  // Auto-load if ICCID or order from link
   useEffect(() => {
     if (iccidParam.trim()) {
       setIccid(iccidParam.trim());
       lookup(iccidParam.trim());
+    } else if (orderParam.trim()) {
+      setLoading(true);
+      fetch("/api/esim-details", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ orderNo: orderParam.trim() }),
+      }).then(r => r.json()).then(d => {
+        if (d.iccid) {
+          setIccid(d.iccid);
+          lookup(d.iccid);
+        } else {
+          setError("Could not find eSIM for this order.");
+          setLoading(false);
+        }
+      }).catch(() => { setError("Failed to look up order."); setLoading(false); });
     }
-  }, [iccidParam]);
+  }, [iccidParam, orderParam]);
 
   const lookup = async (iccidToUse?: string) => {
     const iccidVal = (iccidToUse || iccid).trim();
