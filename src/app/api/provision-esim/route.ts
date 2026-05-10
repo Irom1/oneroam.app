@@ -3,6 +3,7 @@ import { z } from "zod";
 import { stripe } from "@/lib/stripe/server";
 import { purchaseEsim, queryEsim } from "@/lib/esimaccess/order";
 import { query, queryOne, generateId } from "@/lib/d1/client";
+import { sendEsimEmail } from "@/lib/email";
 
 const requestSchema = z.object({
   paymentIntentId: z.string().min(1),
@@ -119,6 +120,23 @@ export async function POST(request: Request) {
       esimDetails.ac = details.ac || "";
     } catch {
       // Details might not be ready immediately
+    }
+
+    // 6. Send email (fire-and-forget — don't block response)
+    const email = pi.receipt_email || (orderId
+      ? ((await queryOne<{ customer_email: string }>(
+          "SELECT customer_email FROM orders WHERE id = ?", [orderId]
+        ))?.customer_email)
+      : "");
+    if (email) {
+      sendEsimEmail({
+        to: email,
+        qrCodeUrl: esimDetails.qrCodeUrl,
+        activationCode: esimDetails.ac,
+        iccid: esimDetails.iccid,
+        orderNo: esimDetails.orderNo,
+        planName: pi.metadata?.packageName || packageCode,
+      }).catch((e) => console.error("Email failed:", e));
     }
 
     return NextResponse.json({ esim: esimDetails });
