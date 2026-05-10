@@ -18,17 +18,6 @@ const STRIPE_KEY =
   "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00Ph4nPLfM";
 const stripePromise = loadStripe(STRIPE_KEY);
 
-function dedupePlans(plans: DisplayPlan[]): DisplayPlan[] {
-  const seen = new Map<string, DisplayPlan>();
-  for (const p of plans) {
-    const key = `${p.locationCode}_${p.dataAmountGb}`;
-    const existing = seen.get(key);
-    if (!existing || p.priceCents < existing.priceCents) {
-      seen.set(key, p);
-    }
-  }
-  return [...seen.values()].sort((a, b) => a.priceCents - b.priceCents);
-}
 
 export default function HomePage() {
   const [plans, setPlans] = useState<DisplayPlan[]>([]);
@@ -42,13 +31,14 @@ export default function HomePage() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          const filtered = data.filter(
-            (p: DisplayPlan) =>
-              p.dataAmountGb >= MIN_GB &&
-              p.dataAmountGb <= MAX_GB &&
-              p.validityDays >= MIN_DAYS
+          setPlans(
+            data.filter(
+              (p: DisplayPlan) =>
+                p.dataAmountGb >= MIN_GB &&
+                p.dataAmountGb <= MAX_GB &&
+                p.validityDays >= MIN_DAYS
+            ).sort((a, b) => a.priceCents - b.priceCents)
           );
-          setPlans(dedupePlans(filtered));
         } else {
           setError(data.error || "Failed to load plans");
         }
