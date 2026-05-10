@@ -23,7 +23,7 @@ const LINKS = [
   { label: "Stripe", url: "https://dashboard.stripe.com" },
   { label: "eSIM Access", url: "https://console.esimaccess.com" },
   { label: "Resend", url: "https://resend.com/emails" },
-  { label: "Cloudflare", url: "https://dash.cloudflare.com" },
+  { label: "Cloudflare", url: "https://dash.cloudflare.com/eb4087cec8ac5f5b3e8a8e6560160dcc/workers/services/view/oneroam/production" },
 ];
 
 const PAGE_SIZE = 10;
