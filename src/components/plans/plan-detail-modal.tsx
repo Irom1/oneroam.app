@@ -29,15 +29,6 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
       />
 
       <div className="relative w-full sm:max-w-lg bg-card rounded-t-3xl sm:rounded-3xl border border-border shadow-2xl max-h-[85vh] overflow-y-auto">
-        <div className="flex justify-center pt-2 pb-1 sm:hidden">
-          <button
-            onClick={onClose}
-            className="w-12 h-7 flex items-center justify-center"
-            aria-label="Dismiss"
-          >
-            <span className="w-8 h-1 rounded-full bg-border" />
-          </button>
-        </div>
 
         {/* Header */}
         <div className="flex items-start justify-between p-5 pb-2">
@@ -117,6 +108,14 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
                   Show all {plan.coverage.length} countries
                 </button>
               )}
+            </div>
+          )}
+
+          {/* IP Routing */}
+          {plan.ipRouting && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-3 py-2">
+              <span className="font-medium shrink-0">IP Routing:</span>
+              <span>{plan.ipRouting}</span>
             </div>
           )}
 
@@ -232,14 +231,16 @@ function ModalPaymentButton({
   return (
     <div>
       {error && <p className="text-sm text-destructive text-center mb-2">{error}</p>}
-      <PaymentRequestButtonElement
-        options={{
-          paymentRequest,
-          style: {
-            paymentRequestButton: { type: "buy", theme: "dark", height: "48px" },
-          },
-        }}
-      />
+      <div className="overflow-hidden rounded-xl">
+        <PaymentRequestButtonElement
+          options={{
+            paymentRequest,
+            style: {
+              paymentRequestButton: { type: "buy", theme: "dark", height: "48px" },
+            },
+          }}
+        />
+      </div>
     </div>
   );
 }

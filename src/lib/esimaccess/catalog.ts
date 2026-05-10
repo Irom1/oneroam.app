@@ -21,6 +21,7 @@ export interface DisplayPlan {
   wholesaleCents: number;
   priceCents: number; // with 25% markup
   speed: string;
+  ipRouting: string; // e.g. "FR/NL"
   operators: { name: string; networkType: string }[];
   isRegional: boolean;
   countryCount?: number;
@@ -113,6 +114,7 @@ export function buildDisplayPlan(pkg: EsimPackage): DisplayPlan {
     wholesaleCents,
     priceCents,
     speed: pkg.speed,
+    ipRouting: pkg.ipExport || "",
     operators: primaryLoc?.operatorList?.map((o) => ({
       name: o.operatorName,
       networkType: o.networkType,

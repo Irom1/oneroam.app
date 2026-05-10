@@ -50,6 +50,7 @@ export interface EsimPackage {
   description: string;
   retailPrice: number;
   speed: string;
+  ipExport: string;
   supportTopUpType: number;
   locationNetworkList: PackageLocation[];
 }
