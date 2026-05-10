@@ -1,14 +1,15 @@
 "use client";
 
-import { X, Globe, Signal, Shield } from "lucide-react";
+import { useState } from "react";
+import { X, Globe, Signal, Shield, ChevronDown, ChevronUp } from "lucide-react";
 import {
   PaymentRequestButtonElement,
   useStripe,
 } from "@stripe/react-stripe-js";
 import type { PaymentRequest } from "@stripe/stripe-js";
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { DisplayPlan } from "@/lib/esimaccess/catalog";
+import type { DisplayPlan, CountryCoverage } from "@/lib/esimaccess/catalog";
 import { formatPrice, formatDataAmount } from "@/lib/utils";
 
 type Props = {
@@ -18,17 +19,16 @@ type Props = {
 };
 
 export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
+  const [showCoverage, setShowCoverage] = useState(false);
+
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
-      {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      {/* Sheet */}
       <div className="relative w-full sm:max-w-lg bg-card rounded-t-3xl sm:rounded-3xl border border-border shadow-2xl max-h-[85vh] overflow-y-auto">
-        {/* Handle */}
         <div className="flex justify-center pt-3 pb-1 sm:hidden">
           <div className="w-10 h-1 rounded-full bg-border" />
         </div>
@@ -41,25 +41,18 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
               <h2 className="text-lg font-bold truncate">{plan.name}</h2>
               <p className="text-sm text-muted-foreground truncate">
                 {plan.locationName}
-                {plan.isRegional && (
-                  <span> &middot; {plan.countryCount} countries</span>
-                )}
+                {plan.isRegional && <span> &middot; {plan.countryCount} countries</span>}
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            className="p-1.5 rounded-full hover:bg-muted transition-colors shrink-0"
-          >
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-muted transition-colors shrink-0">
             <X className="h-5 w-5 text-muted-foreground" />
           </button>
         </div>
 
         {/* Price */}
         <div className="px-5 pb-3">
-          <p className="text-3xl font-bold tracking-tight">
-            {formatPrice(plan.priceCents)}
-          </p>
+          <p className="text-3xl font-bold tracking-tight">{formatPrice(plan.priceCents)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">tax included</p>
         </div>
 
@@ -80,26 +73,48 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
             </div>
           </div>
 
-          {plan.operators.length > 0 && (
+          {/* Country coverage — expandable for regional plans */}
+          {plan.coverage.length > 0 && (
             <div>
-              <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">
-                Network Operators
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {plan.operators.map((op) => (
-                  <span
-                    key={op.name}
-                    className="inline-flex items-center gap-1.5 bg-card border border-border rounded-lg px-3 py-1.5 text-xs"
-                  >
-                    <Signal className="h-3 w-3 text-muted-foreground" />
-                    {op.name}
-                    <span className="text-muted-foreground">{op.networkType}</span>
-                  </span>
+              <button
+                onClick={() => setShowCoverage(!showCoverage)}
+                className="w-full flex items-center justify-between text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2 hover:text-foreground transition-colors"
+              >
+                {plan.isRegional
+                  ? `Coverage (${plan.coverage.length} countries)`
+                  : "Network Operators"}
+                {plan.coverage.length > 1 && (
+                  showCoverage
+                    ? <ChevronUp className="h-3.5 w-3.5" />
+                    : <ChevronDown className="h-3.5 w-3.5" />
+                )}
+              </button>
+
+              <div className={`space-y-1 ${!showCoverage && plan.isRegional ? "max-h-24 overflow-hidden" : ""}`}>
+                {plan.coverage.map((country) => (
+                  <div key={country.locationCode} className="bg-muted/40 rounded-lg px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-medium">{country.locationName}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {country.operators.map((o) => `${o.name} ${o.networkType}`).join(", ")}
+                      </span>
+                    </div>
+                  </div>
                 ))}
               </div>
+
+              {plan.isRegional && plan.coverage.length > 3 && !showCoverage && (
+                <button
+                  onClick={() => setShowCoverage(true)}
+                  className="text-xs text-primary hover:underline mt-1"
+                >
+                  Show all {plan.coverage.length} countries
+                </button>
+              )}
             </div>
           )}
 
+          {/* Features */}
           <div className="space-y-2">
             <div className="flex items-start gap-2 text-sm">
               <Shield className="h-4 w-4 text-[#7ecb8a] mt-0.5 shrink-0" />
@@ -115,11 +130,11 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
             </div>
           </div>
 
-          <div className="pt-2">
+          {/* Payment button with padding below */}
+          <div className="pb-6 pt-1">
             <ModalPaymentButton plan={plan} onClose={onClose} />
           </div>
         </div>
-
       </div>
     </div>
   );
@@ -157,10 +172,7 @@ function ModalPaymentButton({
     const pr = stripe.paymentRequest({
       country: "US",
       currency: "usd",
-      total: {
-        label: `${plan.name} (tax incl.)`,
-        amount: plan.priceCents,
-      },
+      total: { label: `${plan.name} (tax incl.)`, amount: plan.priceCents },
       requestPayerName: false,
       requestPayerEmail: true,
     });
@@ -205,7 +217,7 @@ function ModalPaymentButton({
 
   if (!paymentRequest) {
     return (
-      <p className="text-xs text-center text-muted-foreground">
+      <p className="text-xs text-center text-muted-foreground py-2">
         Apple Pay / Google Pay not available on this device
       </p>
     );
@@ -213,18 +225,12 @@ function ModalPaymentButton({
 
   return (
     <div>
-      {error && (
-        <p className="text-sm text-destructive text-center mb-2">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive text-center mb-2">{error}</p>}
       <PaymentRequestButtonElement
         options={{
           paymentRequest,
           style: {
-            paymentRequestButton: {
-              type: "buy",
-              theme: "dark",
-              height: "48px",
-            },
+            paymentRequestButton: { type: "buy", theme: "dark", height: "48px" },
           },
         }}
       />

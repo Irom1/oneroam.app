@@ -2,6 +2,12 @@ import { apiCall, type EsimPackage } from "./client";
 
 const MARKUP = 1.25; // 25% markup, tax included
 
+export interface CountryCoverage {
+  locationName: string;
+  locationCode: string;
+  operators: { name: string; networkType: string }[];
+}
+
 export interface DisplayPlan {
   id: string; // packageCode
   slug: string;
@@ -18,6 +24,7 @@ export interface DisplayPlan {
   operators: { name: string; networkType: string }[];
   isRegional: boolean;
   countryCount?: number;
+  coverage: CountryCoverage[]; // full country list for regional plans
 }
 
 export interface PlansByRegion {
@@ -112,6 +119,14 @@ export function buildDisplayPlan(pkg: EsimPackage): DisplayPlan {
     })) || [],
     isRegional,
     countryCount: isRegional ? locs.length : 1,
+    coverage: (pkg.locationNetworkList || []).map((loc) => ({
+      locationName: loc.locationName,
+      locationCode: loc.locationCode,
+      operators: (loc.operatorList || []).map((op) => ({
+        name: op.operatorName,
+        networkType: op.networkType,
+      })),
+    })),
   };
 }
 

@@ -23,6 +23,11 @@ export async function sendEsimEmail({
     return;
   }
 
+  const encodedEmail = encodeURIComponent(to);
+  const topupUrl = `https://oneroam.app/topup?email=${encodedEmail}`;
+
+  // ... rest stays same
+
   const acBlock = activationCode
     ? `<p style="font-size:16px;color:#333"><strong>Activation Code:</strong> <code style="background:#f5f5f5;padding:4px 8px;border-radius:4px;font-size:18px;letter-spacing:2px">${activationCode}</code></p>`
     : "";
@@ -55,7 +60,7 @@ export async function sendEsimEmail({
     <p style="font-size:13px;color:#555;margin:0 0 8px">
       <strong>Running low on data?</strong> Top up anytime.
     </p>
-    <a href="https://oneroam.app/topup" style="font-size:13px;color:#4a90d9;text-decoration:none;font-weight:500">
+    <a href="${topupUrl}" style="font-size:13px;color:#4a90d9;text-decoration:none;font-weight:500">
       Check usage &amp; top up →
     </a>
   </div>
