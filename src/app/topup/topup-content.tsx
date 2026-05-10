@@ -31,6 +31,7 @@ export function TopupContent() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [detailPlan, setDetailPlan] = useState<DisplayPlan | null>(null);
+  const [esimCountry, setEsimCountry] = useState("");
 
   // Auto-load if ICCID or order from link
   useEffect(() => {
@@ -72,7 +73,10 @@ export function TopupContent() {
       const plansData = await plansRes.json();
       if (usageRes.ok) setUsage(usageData.usage || null);
       if (plansRes.ok && Array.isArray(plansData.plans)) {
-        setPlans(plansData.plans.filter((p: DisplayPlan) => p.dataAmountGb >= 1));
+        const filtered = plansData.plans.filter((p: DisplayPlan) => p.dataAmountGb >= 1);
+        setPlans(filtered);
+        // Determine eSIM country from first plan's location
+        if (filtered.length > 0) setEsimCountry(filtered[0].locationName || "");
       } else if (!usageRes.ok) {
         setError("eSIM not found. Check your ICCID.");
       }
@@ -122,26 +126,31 @@ export function TopupContent() {
           </div>
         )}
 
-        {/* Usage bar */}
-        {usage && (
+        {/* Usage bar or not-installed state */}
+        {(usage || (!loading && plans.length > 0)) && (
           <div className="mt-6 bg-card rounded-2xl border border-border p-4">
-            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">Data Usage</p>
-            <div className="flex items-center gap-3 mb-2">
-              {usagePercent > 90 ? <WifiOff className="h-5 w-5 text-destructive" />
-                : usagePercent > 50 ? <Signal className="h-5 w-5 text-amber-500" />
-                : <Wifi className="h-5 w-5 text-[#7ecb8a]" />}
-              <span className="text-sm font-medium">
-                {usage.totalVolume && usage.usedVolume
-                  ? `${formatBytes(usage.usedVolume)} / ${formatBytes(usage.totalVolume)} used`
-                  : usage.status || "Active"}
-              </span>
-            </div>
-            {usage.totalVolume && usage.usedVolume ? (
-              <div className="h-2 rounded-full bg-muted overflow-hidden">
-                <div className={`h-full rounded-full transition-all ${usagePercent > 90 ? "bg-destructive" : usagePercent > 50 ? "bg-amber-500" : "bg-[#7ecb8a]"}`}
-                  style={{ width: `${Math.min(usagePercent, 100)}%` }} />
-              </div>
-            ) : null}
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-3">eSIM Status</p>
+            {usage?.totalVolume ? (
+              <>
+                <div className="flex items-center gap-3 mb-2">
+                  {usagePercent > 90 ? <WifiOff className="h-5 w-5 text-destructive" />
+                    : usagePercent > 50 ? <Signal className="h-5 w-5 text-amber-500" />
+                    : <Wifi className="h-5 w-5 text-[#7ecb8a]" />}
+                  <span className="text-sm font-medium">
+                    {usage.usedVolume != null
+                      ? `${formatBytes(usage.usedVolume)} / ${formatBytes(usage.totalVolume)} used`
+                      : "Active"}
+                  </span>
+                  {usage.status && <span className="text-xs text-muted-foreground">{usage.status}</span>}
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden">
+                  <div className={`h-full rounded-full transition-all ${usagePercent > 90 ? "bg-destructive" : usagePercent > 50 ? "bg-amber-500" : "bg-[#7ecb8a]"}`}
+                    style={{ width: `${Math.min(usagePercent, 100)}%` }} />
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">Not yet installed. Activate your eSIM first, then check back for usage.</p>
+            )}
           </div>
         )}
 
@@ -152,17 +161,35 @@ export function TopupContent() {
           </div>
         )}
 
-        {/* Topup plans */}
-        {plans.length > 0 && (
-          <div className="mt-6">
-            <p className="text-sm font-medium text-muted-foreground mb-3">Available top-up plans</p>
-            <div className="space-y-2">
-              {plans.map((plan) => (
-                <PlanCard key={plan.id} plan={plan} onSelect={(p) => setDetailPlan(p)} />
-              ))}
+        {/* Topup plans grouped by country */}
+        {plans.length > 0 && (() => {
+          const sameCountry = plans.filter(p => esimCountry && p.locationName === esimCountry);
+          const otherCountries = plans.filter(p => !esimCountry || p.locationName !== esimCountry);
+          return (
+            <div className="mt-6 space-y-4">
+              {sameCountry.length > 0 && (
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">{esimCountry} top-up plans</p>
+                  <div className="space-y-2">
+                    {sameCountry.map((plan) => (
+                      <PlanCard key={plan.id} plan={plan} onSelect={(p) => setDetailPlan(p)} />
+                    ))}
+                  </div>
+                </div>
+              )}
+              {otherCountries.length > 0 && (
+                <div>
+                  <p className="text-xs font-medium text-muted-foreground mb-2 uppercase tracking-wide">Other countries</p>
+                  <div className="space-y-2">
+                    {otherCountries.map((plan) => (
+                      <PlanCard key={plan.id} plan={plan} onSelect={(p) => setDetailPlan(p)} />
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         {!loading && plans.length === 0 && !error && (iccidParam || iccid) && (
           <p className="mt-6 text-center text-sm text-muted-foreground">No top-up plans available for this eSIM.</p>
