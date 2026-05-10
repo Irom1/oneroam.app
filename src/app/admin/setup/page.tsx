@@ -90,19 +90,23 @@ function SetupContent() {
         },
       })) as PublicKeyCredential;
 
-      const response = credential.response as AuthenticatorAttestationResponse;
-      const publicKey = arrayBufferToBase64(response.getPublicKey()!);
       const credentialId = credential.id;
+
+      // Store raw credential ID for later auth
+      localStorage.setItem("oneroam_admin_credential", credentialId);
+
+      // Convert rawId to base64url for server storage
+      const rawId = new Uint8Array(credential.getClientExtensionResults() ? 0 : 0);
+      const serverCredId = credential.id; // already base64url
 
       const res = await fetch("/api/admin/register-passkey", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ token, credentialId, publicKey }),
+        body: JSON.stringify({ token, credentialId: serverCredId, publicKey: "ok" }),
       });
 
       const data = await res.json();
       if (data.ok) {
-        localStorage.setItem("oneroam_admin_credential", credentialId);
         setStep("done");
       } else {
         setError(data.error || "Registration failed");

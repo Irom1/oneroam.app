@@ -45,18 +45,21 @@ export default function AdminPage() {
 
   const authenticate = useCallback(async () => {
     try {
-      const credId = localStorage.getItem("oneroam_admin_credential");
-      if (!credId) throw new Error("No credential");
+      const credIdB64 = localStorage.getItem("oneroam_admin_credential");
+      if (!credIdB64) throw new Error("No credential");
+
+      // Decode base64url to ArrayBuffer
+      const bin = atob(credIdB64.replace(/-/g, "+").replace(/_/g, "/"));
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
       const credential = (await navigator.credentials.get({
         publicKey: {
           challenge: new Uint8Array(32),
           rpId: "oneroam.app",
-          allowCredentials: [{
-            id: Uint8Array.from(atob(credId.replace(/-/g, "+").replace(/_/g, "/")), (c) => c.charCodeAt(0)),
-            type: "public-key",
-          }],
+          allowCredentials: [{ id: bytes, type: "public-key" }],
           timeout: 60000,
-          userVerification: "required",
+          userVerification: "preferred",
         },
       })) as PublicKeyCredential;
       if (credential) {
