@@ -61,7 +61,7 @@ export default function AdminPage() {
           body: JSON.stringify({ credentialId: credential.id }),
         });
         const d = await res.json();
-        if (d.ok) setAuthed(true);
+        if (d.ok) { localStorage.setItem("oneroam_admin_credential", credential.id); setAuthed(true); }
         else setError("Authentication failed - set one up first.");
       }
     } catch { setError("Passkey required to access dashboard"); }
