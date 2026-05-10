@@ -45,8 +45,11 @@ export async function query<T = Record<string, unknown>>(
   // Production: use D1 binding
   const binding = getD1Binding();
   if (binding && typeof (binding as Record<string, unknown>).prepare === "function") {
-    const stmt = (binding as Record<string, Function>).prepare.call(binding, sql);
-    if (params?.length) stmt.bind(...params);
+    const db = binding as Record<string, Function>;
+    let stmt = db.prepare.call(binding, sql);
+    if (params && params.length > 0) {
+      stmt = stmt.bind(...params);
+    }
     const result = await (stmt.all() as Promise<{ results: T[] }>);
     return { results: result.results, success: true };
   }

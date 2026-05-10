@@ -1,18 +1,20 @@
 import { Suspense } from "react";
 import { Loader2 } from "lucide-react";
-import { CheckoutSuccessContent } from "./checkout-success-content";
+import { SuccessContent } from "./success-content";
 
-export default function CheckoutSuccessPage() {
+export default function SuccessPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="mx-auto max-w-2xl px-4 py-20 text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-muted-foreground" />
-          <h1 className="mt-4 text-xl font-bold">Loading...</h1>
-        </div>
-      }
-    >
-      <CheckoutSuccessContent />
-    </Suspense>
+    <div className="mx-auto max-w-lg px-6 py-20 text-center">
+      <Suspense
+        fallback={
+          <div className="space-y-4">
+            <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
+            <h1 className="text-xl font-bold">Loading…</h1>
+          </div>
+        }
+      >
+        <SuccessContent />
+      </Suspense>
+    </div>
   );
 }

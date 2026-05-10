@@ -1,14 +1,15 @@
 import { NextResponse } from "next/server";
-import { getPlans } from "@/lib/d1/data";
+import { getDisplayPlans } from "@/lib/esimaccess/catalog";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const countryId = searchParams.get("country_id") || undefined;
-
+export async function GET() {
   try {
-    const plans = await getPlans({ countryId });
+    const plans = await getDisplayPlans();
     return NextResponse.json(plans);
   } catch (error) {
-    return NextResponse.json({ error: "Failed to fetch plans" }, { status: 500 });
+    console.error("getPlans error:", error);
+    return NextResponse.json(
+      { error: "Failed to fetch plans" },
+      { status: 500 }
+    );
   }
 }

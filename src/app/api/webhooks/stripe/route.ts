@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { stripe } from "@/lib/stripe/server";
-import { updateOrderCompleted, updateOrderFailedBySession } from "@/lib/d1/data";
+import { purchaseEsim } from "@/lib/esimaccess/order";
+import { query, generateId } from "@/lib/d1/client";
 import type Stripe from "stripe";
 
 export async function POST(request: Request) {
@@ -17,7 +18,6 @@ export async function POST(request: Request) {
   }
 
   let event: Stripe.Event;
-
   try {
     event = stripe.webhooks.constructEvent(
       body,
@@ -25,33 +25,47 @@ export async function POST(request: Request) {
       process.env.STRIPE_WEBHOOK_SECRET!
     );
   } catch {
-    return NextResponse.json(
-      { error: "Invalid signature" },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
   try {
     switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        const orderId = session.metadata?.order_id;
-        if (!orderId) break;
+      case "payment_intent.succeeded": {
+        const pi = event.data.object as Stripe.PaymentIntent;
+        const packageCode = pi.metadata?.packageCode;
+        const packageName = pi.metadata?.packageName || packageCode;
+        const email = pi.receipt_email || "unknown@email";
 
-        const paymentIntentId =
-          typeof session.payment_intent === "string"
-            ? session.payment_intent
-            : session.payment_intent?.id || null;
+        if (!packageCode) break;
 
-        await updateOrderCompleted(orderId, paymentIntentId);
-        break;
-      }
-
-      case "checkout.session.expired": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        if (session.id) {
-          await updateOrderFailedBySession(session.id);
+        // Purchase eSIM from esimaccess
+        const transactionId = generateId();
+        let orderNo = "";
+        try {
+          const result = await purchaseEsim(packageCode, transactionId);
+          orderNo = result.orderNo;
+        } catch (e) {
+          console.error("esimaccess order failed:", e);
+          // Still store the order as failed
         }
+
+        // Store order in D1
+        const id = generateId();
+        await query(
+          `INSERT INTO orders (id, customer_email, stripe_payment_intent_id, esimaccess_order_no, package_code, package_name, amount_cents, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            id,
+            email,
+            pi.id,
+            orderNo || null,
+            packageCode,
+            packageName,
+            pi.amount,
+            orderNo ? "fulfilled" : "failed",
+          ]
+        );
+
         break;
       }
     }
