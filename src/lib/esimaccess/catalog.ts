@@ -83,7 +83,10 @@ export async function fetchPackages(): Promise<EsimPackage[]> {
 
 export function buildDisplayPlan(pkg: EsimPackage): DisplayPlan {
   const wholesaleCents = microToCents(pkg.price);
-  const priceCents = Math.round(wholesaleCents * MARKUP);
+  // Apply 25% markup, then round to end in .99
+  const markedUp = Math.round(wholesaleCents * MARKUP);
+  const dollars = Math.floor(markedUp / 100);
+  const priceCents = dollars >= 1 ? dollars * 100 + 99 : Math.max(markedUp, 99);
   const locs = pkg.location.split(",");
   const isRegional = locs.length > 1;
   const primaryLoc = pkg.locationNetworkList?.[0];

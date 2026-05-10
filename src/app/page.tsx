@@ -72,21 +72,17 @@ export default function HomePage() {
     <Elements stripe={stripePromise}>
       <HeroSection />
 
-      <section className="pb-36">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6">
+      <section className="pb-24">
+        <div className="mx-auto max-w-3xl px-3 sm:px-6">
           {loading ? (
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from({ length: 6 }).map((_, i) => (
+            <div className="space-y-2">
+              {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-2xl border border-border bg-card p-5 h-40 animate-pulse"
+                  className="rounded-xl border border-border bg-card p-4 h-24 animate-pulse"
                 >
-                  <div className="h-4 w-20 bg-muted rounded mb-3" />
-                  <div className="h-5 w-32 bg-muted rounded mb-2" />
-                  <div className="flex gap-2">
-                    <div className="h-5 w-14 bg-muted rounded-full" />
-                    <div className="h-5 w-14 bg-muted rounded-full" />
-                  </div>
+                  <div className="h-4 w-20 bg-muted rounded mb-2" />
+                  <div className="h-5 w-40 bg-muted rounded" />
                 </div>
               ))}
             </div>
@@ -96,14 +92,14 @@ export default function HomePage() {
             </div>
           ) : (
             <>
-              <div className="relative mb-6">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <div className="relative mb-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Search country or region…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-12 pl-10 pr-4 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full h-11 pl-9 pr-4 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
                 />
                 {search && (
                   <button
@@ -121,10 +117,10 @@ export default function HomePage() {
                 </div>
               ) : (
                 <>
-                  <p className="text-xs text-muted-foreground mb-4">
+                  <p className="text-xs text-muted-foreground mb-3 px-1">
                     {filtered.length} plans &middot; {MIN_GB}–{MAX_GB}GB &middot; {MIN_DAYS}+ days
                   </p>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="space-y-2">
                     {filtered.map((plan) => (
                       <PlanCard
                         key={plan.id}
