@@ -54,15 +54,15 @@ export function HomeContent() {
   const selectPlan = useCallback(
     (plan: DisplayPlan) => {
       setDetailPlan(plan);
-      router.replace(`/plan/${plan.id}`, { scroll: false });
+      window.history.replaceState(null, "", `/plan/${plan.id}`);
     },
-    [router]
+    []
   );
 
   const closePlan = useCallback(() => {
     setDetailPlan(null);
-    router.replace("/", { scroll: false });
-  }, [router]);
+    window.history.replaceState(null, "", "/");
+  }, []);
 
   const filtered = useMemo(() => {
     if (!search.trim()) return plans;

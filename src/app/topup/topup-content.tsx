@@ -65,12 +65,15 @@ export function TopupContent() {
     setUsage(null);
 
     try {
-      const [usageRes, plansRes] = await Promise.all([
+      const [esimRes, usageRes, plansRes] = await Promise.all([
+        fetch("/api/esim-details-by-iccid", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ iccid: iccidVal }) }),
         fetch("/api/usage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ iccid: iccidVal }) }),
         fetch("/api/topup/options", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ iccid: iccidVal }) }),
       ]);
+      const esimCountryData = await esimRes.json();
       const usageData = await usageRes.json();
       const plansData = await plansRes.json();
+      if (esimCountryData.countryCode) setEsimCountry(esimCountryData.countryCode);
       if (usageRes.ok) setUsage(usageData.usage || null);
       if (plansRes.ok && Array.isArray(plansData.plans)) {
         const filtered = plansData.plans.filter((p: DisplayPlan) => p.dataAmountGb >= 1);
@@ -163,13 +166,13 @@ export function TopupContent() {
 
         {/* Topup plans grouped by country */}
         {plans.length > 0 && (() => {
-          const sameCountry = plans.filter(p => esimCountry && p.locationName === esimCountry);
-          const otherCountries = plans.filter(p => !esimCountry || p.locationName !== esimCountry);
+          const sameCountry = plans.filter(p => esimCountry && p.locationCode === esimCountry);
+          const otherCountries = plans.filter(p => !esimCountry || p.locationCode !== esimCountry);
           return (
             <div className="mt-6 space-y-4">
               {sameCountry.length > 0 && (
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground mb-2">{esimCountry} top-up plans</p>
+                  <p className="text-sm font-medium text-muted-foreground mb-2">Top-up plans</p>
                   <div className="space-y-2">
                     {sameCountry.map((plan) => (
                       <PlanCard key={plan.id} plan={plan} onSelect={(p) => setDetailPlan(p)} />
