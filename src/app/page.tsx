@@ -12,6 +12,7 @@ import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 
 const MIN_GB = 10;
 const MAX_GB = 30;
+const MIN_DAYS = 30;
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
@@ -43,7 +44,10 @@ export default function HomePage() {
       .then((data) => {
         if (Array.isArray(data)) {
           const filtered = data.filter(
-            (p: DisplayPlan) => p.dataAmountGb >= MIN_GB && p.dataAmountGb <= MAX_GB
+            (p: DisplayPlan) =>
+              p.dataAmountGb >= MIN_GB &&
+              p.dataAmountGb <= MAX_GB &&
+              p.validityDays >= MIN_DAYS
           );
           setPlans(dedupePlans(filtered));
         } else {
@@ -119,7 +123,7 @@ export default function HomePage() {
               ) : (
                 <>
                   <p className="text-xs text-muted-foreground mb-4">
-                    {filtered.length} plans &middot; {MIN_GB}–{MAX_GB}GB
+                    {filtered.length} plans &middot; {MIN_GB}–{MAX_GB}GB &middot; {MIN_DAYS}+ days
                   </p>
                   <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                     {filtered.map((plan) => (
