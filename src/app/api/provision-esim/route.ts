@@ -50,19 +50,20 @@ export async function POST(request: Request) {
         // Already done — query eSIM details
         try {
           const details = await queryEsim(existing.esimaccess_order_no as string);
-          return NextResponse.json({
-            esim: {
-              orderNo: details.orderNo,
-              iccid: details.iccid,
-              qrCodeUrl: details.qrCodeUrl || "",
-              ac: details.ac || "",
-            },
-          });
-        } catch {
-          return NextResponse.json({
-            esim: { orderNo: existing.esimaccess_order_no },
-          });
-        }
+          if (details) {
+            return NextResponse.json({
+              esim: {
+                orderNo: details.orderNo,
+                iccid: details.iccid,
+                qrCodeUrl: details.qrCodeUrl || "",
+                ac: details.ac || "",
+              },
+            });
+          }
+        } catch {}
+        return NextResponse.json({
+          esim: { orderNo: existing.esimaccess_order_no },
+        });
       }
     }
 
@@ -116,10 +117,12 @@ export async function POST(request: Request) {
     } = { orderNo };
     try {
       const details = await queryEsim(orderNo);
-      esimDetails.orderNo = details.orderNo;
-      esimDetails.iccid = details.iccid;
-      esimDetails.qrCodeUrl = details.qrCodeUrl || "";
-      esimDetails.ac = details.ac || "";
+      if (details) {
+        esimDetails.orderNo = details.orderNo;
+        esimDetails.iccid = details.iccid;
+        esimDetails.qrCodeUrl = details.qrCodeUrl || "";
+        esimDetails.ac = details.ac || "";
+      }
     } catch {
       // Details might not be ready immediately
     }

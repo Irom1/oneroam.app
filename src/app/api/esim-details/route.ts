@@ -10,8 +10,8 @@ export async function POST(request: Request) {
 
     const details = await queryEsim(orderNo);
     return NextResponse.json({
-      iccid: details.iccid,
-      orderNo: details.orderNo,
+      iccid: details?.iccid || "",
+      orderNo: details?.orderNo || orderNo,
     });
   } catch {
     return NextResponse.json(

@@ -20,20 +20,19 @@ export async function GET(request: Request) {
       return NextResponse.json({ order: null });
     }
 
-    // If fulfilled and has orderNo, query eSIM details
-    let esimDetails = {};
+    let esimDetails: Record<string, string> = {};
     if (order.status === "completed" && order.esimaccess_order_no) {
       try {
         const details = await queryEsim(order.esimaccess_order_no as string);
-        esimDetails = {
-          orderNo: details.orderNo,
-          iccid: details.iccid,
-          qrCodeUrl: details.qrCodeUrl || "",
-          ac: details.ac || "",
-        };
-      } catch {
-        // eSIM might not be ready yet
-      }
+        if (details) {
+          esimDetails = {
+            orderNo: details.orderNo,
+            iccid: details.iccid,
+            qrCodeUrl: details.qrCodeUrl || "",
+            ac: details.ac || "",
+          };
+        }
+      } catch {}
     }
 
     return NextResponse.json({
@@ -45,9 +44,6 @@ export async function GET(request: Request) {
       },
     });
   } catch {
-    return NextResponse.json(
-      { error: "Failed to fetch order" },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: "Failed to fetch order" }, { status: 500 });
   }
 }

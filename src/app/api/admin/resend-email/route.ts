@@ -23,9 +23,11 @@ export async function POST(request: Request) {
     if (esimOrderNo) {
       try {
         const details = await queryEsim(esimOrderNo);
-        qrCodeUrl = details.qrCodeUrl || "";
-        activationCode = details.ac || "";
-        iccid = details.iccid || "";
+        if (details) {
+          qrCodeUrl = details.qrCodeUrl || "";
+          activationCode = details.ac || "";
+          iccid = details.iccid || "";
+        }
       } catch {}
     }
 
