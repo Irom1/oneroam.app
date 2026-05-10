@@ -36,9 +36,9 @@ export async function POST(request: Request) {
     const orderId = generateId();
     const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
     await query(
-      `INSERT INTO orders (id, order_number, customer_email, package_code, package_name, amount_cents, status)
-       VALUES (?, ?, ?, ?, ?, ?, 'pending')`,
-      [orderId, orderNumber, email || "", plan.id, plan.name, plan.priceCents]
+      `INSERT INTO orders (id, order_number, customer_email, package_code, package_name, amount_cents, total_cents, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')`,
+      [orderId, orderNumber, email || "", plan.id, plan.name, plan.priceCents, plan.priceCents]
     );
 
     // Create Stripe PaymentIntent

@@ -1,15 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { X, Globe, Signal, Shield, ChevronDown, ChevronUp } from "lucide-react";
 import {
   PaymentRequestButtonElement,
   useStripe,
 } from "@stripe/react-stripe-js";
 import type { PaymentRequest } from "@stripe/stripe-js";
-import { useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import type { DisplayPlan, CountryCoverage } from "@/lib/esimaccess/catalog";
+import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 import { formatPrice, formatDataAmount } from "@/lib/utils";
 
 type Props = {
@@ -20,6 +19,12 @@ type Props = {
 
 export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
   const [showCoverage, setShowCoverage] = useState(false);
+
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">

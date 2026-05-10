@@ -53,8 +53,8 @@ export async function POST(request: Request) {
         const id = generateId();
         const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
         await query(
-          `INSERT INTO orders (id, order_number, customer_email, stripe_payment_intent_id, esimaccess_order_no, package_code, package_name, amount_cents, status)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          `INSERT INTO orders (id, order_number, customer_email, stripe_payment_intent_id, esimaccess_order_no, package_code, package_name, amount_cents, total_cents, status)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           [
             id,
             orderNumber,
@@ -63,6 +63,7 @@ export async function POST(request: Request) {
             orderNo || null,
             packageCode,
             packageName,
+            pi.amount,
             pi.amount,
             orderNo ? "fulfilled" : "failed",
           ]
