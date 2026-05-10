@@ -1,6 +1,13 @@
 "use client";
 
 import { X, Globe, Signal, Shield } from "lucide-react";
+import {
+  PaymentRequestButtonElement,
+  useStripe,
+} from "@stripe/react-stripe-js";
+import type { PaymentRequest } from "@stripe/stripe-js";
+import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 import { formatPrice, formatDataAmount } from "@/lib/utils";
 
@@ -108,13 +115,119 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
             </div>
           </div>
 
-          <p className="text-xs text-center text-muted-foreground pt-2 pb-1">
-            Close this to pay with Apple Pay or Google Pay below
-          </p>
+          <div className="pt-2">
+            <ModalPaymentButton plan={plan} onClose={onClose} />
+          </div>
         </div>
 
-        <div className="h-4" />
       </div>
+    </div>
+  );
+}
+
+function ModalPaymentButton({
+  plan,
+  onClose,
+}: {
+  plan: DisplayPlan;
+  onClose: () => void;
+}) {
+  const stripe = useStripe();
+  const router = useRouter();
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const createPaymentIntent = useCallback(async (email: string) => {
+    const res = await fetch("/api/create-payment-intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ packageCode: plan.id, email }),
+    });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.error || "Failed to create payment");
+    }
+    return res.json();
+  }, [plan.id]);
+
+  useEffect(() => {
+    if (!stripe) return;
+
+    const pr = stripe.paymentRequest({
+      country: "US",
+      currency: "usd",
+      total: {
+        label: `${plan.name} (tax incl.)`,
+        amount: plan.priceCents,
+      },
+      requestPayerName: false,
+      requestPayerEmail: true,
+    });
+
+    pr.canMakePayment().then((result) => {
+      if (result) setPaymentRequest(pr);
+      setLoading(false);
+    });
+
+    pr.on("paymentmethod", async (ev) => {
+      try {
+        const email = ev.payerEmail || "";
+        const { clientSecret, paymentIntentId } = await createPaymentIntent(email);
+        const { error: confirmError } = await stripe.confirmCardPayment(
+          clientSecret,
+          { payment_method: ev.paymentMethod.id },
+          { handleActions: false }
+        );
+        if (confirmError) {
+          ev.complete("fail");
+          setError(confirmError.message || "Payment failed");
+        } else {
+          ev.complete("success");
+          router.push(`/checkout/success?payment_intent=${paymentIntentId}`);
+        }
+      } catch (err) {
+        ev.complete("fail");
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      }
+    });
+
+    return () => {};
+  }, [stripe, plan, createPaymentIntent, router]);
+
+  if (loading) {
+    return (
+      <div className="h-12 rounded-xl bg-muted animate-pulse flex items-center justify-center">
+        <span className="text-sm text-muted-foreground">Loading…</span>
+      </div>
+    );
+  }
+
+  if (!paymentRequest) {
+    return (
+      <p className="text-xs text-center text-muted-foreground">
+        Apple Pay / Google Pay not available on this device
+      </p>
+    );
+  }
+
+  return (
+    <div>
+      {error && (
+        <p className="text-sm text-destructive text-center mb-2">{error}</p>
+      )}
+      <PaymentRequestButtonElement
+        options={{
+          paymentRequest,
+          style: {
+            paymentRequestButton: {
+              type: "buy",
+              theme: "dark",
+              height: "48px",
+            },
+          },
+        }}
+      />
     </div>
   );
 }

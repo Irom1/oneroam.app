@@ -7,7 +7,6 @@ import { loadStripe } from "@stripe/stripe-js";
 import { HeroSection } from "@/components/landing/hero-section";
 import { PlanCard } from "@/components/plans/plan-card";
 import { PlanDetailModal } from "@/components/plans/plan-detail-modal";
-import { PaymentBar } from "@/components/payment/payment-button";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 
 const MIN_GB = 10;
@@ -32,7 +31,6 @@ function dedupePlans(plans: DisplayPlan[]): DisplayPlan[] {
 
 export default function HomePage() {
   const [plans, setPlans] = useState<DisplayPlan[]>([]);
-  const [selected, setSelected] = useState<DisplayPlan | null>(null);
   const [detailPlan, setDetailPlan] = useState<DisplayPlan | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -130,11 +128,7 @@ export default function HomePage() {
                       <PlanCard
                         key={plan.id}
                         plan={plan}
-                        onSelect={(p) => {
-                          setDetailPlan(p);
-                          setSelected(p);
-                        }}
-                        selected={selected?.id === plan.id}
+                        onSelect={(p) => setDetailPlan(p)}
                       />
                     ))}
                   </div>
@@ -145,24 +139,11 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Payment bar: z-[60] stays above modal */}
-      <PaymentBar
-        plan={selected}
-        onClear={() => {
-          setSelected(null);
-          setDetailPlan(null);
-        }}
-      />
-
-      {/* Detail modal: z-50, below payment bar */}
       {detailPlan && (
         <PlanDetailModal
           plan={detailPlan}
           onClose={() => setDetailPlan(null)}
-          onBuy={() => {
-            // Already selected via onSelect, just close modal
-            setDetailPlan(null);
-          }}
+          onBuy={() => setDetailPlan(null)}
         />
       )}
     </Elements>

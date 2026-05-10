@@ -1,10 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Signal, Wifi, WifiOff, ArrowRight } from "lucide-react";
+import { Signal, Wifi, WifiOff } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
-import { PaymentBar } from "@/components/payment/payment-button";
 import { PlanCard } from "@/components/plans/plan-card";
 import { PlanDetailModal } from "@/components/plans/plan-detail-modal";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
@@ -26,7 +25,6 @@ export default function TopupPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [searched, setSearched] = useState(false);
-  const [selected, setSelected] = useState<DisplayPlan | null>(null);
   const [detailPlan, setDetailPlan] = useState<DisplayPlan | null>(null);
 
   const lookup = async () => {
@@ -155,11 +153,7 @@ export default function TopupPage() {
                 <PlanCard
                   key={plan.id}
                   plan={plan}
-                  onSelect={(p) => {
-                    setDetailPlan(p);
-                    setSelected(p);
-                  }}
-                  selected={selected?.id === plan.id}
+                  onSelect={(p) => setDetailPlan(p)}
                 />
               ))}
             </div>
@@ -172,14 +166,6 @@ export default function TopupPage() {
           </p>
         )}
       </div>
-
-      <PaymentBar
-        plan={selected}
-        onClear={() => {
-          setSelected(null);
-          setDetailPlan(null);
-        }}
-      />
 
       {detailPlan && (
         <PlanDetailModal
