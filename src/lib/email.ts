@@ -51,6 +51,15 @@ export async function sendEsimEmail({
     <li>Label your eSIM (e.g. "Travel") and you're online</li>
   </ol>
 
+  <div style="margin-top:24px;padding:16px;background:#f5f8fb;border-radius:12px">
+    <p style="font-size:13px;color:#555;margin:0 0 8px">
+      <strong>Running low on data?</strong> Top up anytime.
+    </p>
+    <a href="https://oneroam.app/topup" style="font-size:13px;color:#4a90d9;text-decoration:none;font-weight:500">
+      Check usage &amp; top up →
+    </a>
+  </div>
+
   <p style="margin-top:24px;font-size:12px;color:#aaa">
     oneroam — instant travel eSIM
   </p>
