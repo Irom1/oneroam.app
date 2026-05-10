@@ -7,8 +7,7 @@ import { CheckCircle, Copy, Loader2 } from "lucide-react";
 
 export function SuccessContent() {
   const searchParams = useSearchParams();
-  const paymentIntent = searchParams.get("payment_intent");
-  const planId = searchParams.get("plan");
+  const paymentIntentId = searchParams.get("payment_intent");
   const [status, setStatus] = useState<"loading" | "done" | "error">("loading");
   const [esim, setEsim] = useState<{
     orderNo: string;
@@ -17,42 +16,41 @@ export function SuccessContent() {
     ac?: string;
   } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
 
   useEffect(() => {
-    if (!paymentIntent) {
+    if (!paymentIntentId) {
       setStatus("error");
+      setErrorMsg("No payment reference found.");
       return;
     }
 
-    let attempts = 0;
-    const maxAttempts = 20;
-
-    const poll = async () => {
+    // Provision the eSIM synchronously via API
+    const provision = async () => {
       try {
-        const res = await fetch(
-          `/api/orders/by-payment?payment_intent=${paymentIntent}`
-        );
+        const res = await fetch("/api/provision-esim", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paymentIntentId }),
+        });
+
         const data = await res.json();
 
-        if (res.ok && data.order && data.order.status === "fulfilled") {
-          setEsim(data.order);
+        if (res.ok && data.esim) {
+          setEsim(data.esim);
           setStatus("done");
-          return;
+        } else {
+          setStatus("error");
+          setErrorMsg(data.error || "Could not provision eSIM.");
         }
       } catch {
-        // continue polling
-      }
-
-      attempts++;
-      if (attempts >= maxAttempts) {
         setStatus("error");
-        return;
+        setErrorMsg("Network error. Please contact support.");
       }
-      setTimeout(poll, 2000);
     };
 
-    poll();
-  }, [paymentIntent]);
+    provision();
+  }, [paymentIntentId]);
 
   if (status === "loading") {
     return (
@@ -60,19 +58,21 @@ export function SuccessContent() {
         <Loader2 className="mx-auto h-8 w-8 animate-spin text-primary" />
         <h1 className="text-xl font-bold">Activating your eSIM…</h1>
         <p className="text-muted-foreground text-sm">
-          We&apos;re provisioning your eSIM. This takes just a moment.
+          We&apos;re provisioning your eSIM. This takes just a few seconds.
         </p>
       </div>
     );
   }
 
-  if (status === "error" || !esim) {
+  if (status === "error") {
     return (
       <div className="space-y-4">
         <h1 className="text-xl font-bold">Almost there</h1>
         <p className="text-muted-foreground text-sm">
-          Your payment went through, but we&apos;re still provisioning your eSIM.
-          You&apos;ll receive an email shortly with activation details.
+          {errorMsg || "Your payment went through. Your eSIM is being provisioned."}
+        </p>
+        <p className="text-xs text-muted-foreground">
+          Ref: {paymentIntentId?.slice(-12)}
         </p>
         <Link
           href="/"
@@ -91,11 +91,11 @@ export function SuccessContent() {
       </div>
       <h1 className="text-2xl font-bold">eSIM Ready</h1>
       <p className="text-muted-foreground text-sm">
-        Your eSIM has been activated. Scan the QR code below or enter the
-        activation code manually.
+        Your eSIM has been activated. Scan the QR code or use the activation
+        code below.
       </p>
 
-      {esim.qrCodeUrl && (
+      {esim?.qrCodeUrl && (
         <div className="bg-white rounded-2xl border border-border p-4 inline-block mx-auto">
           <img
             src={esim.qrCodeUrl}
@@ -106,11 +106,9 @@ export function SuccessContent() {
       )}
 
       <div className="space-y-3 bg-card rounded-2xl border border-border p-5 text-left max-w-sm mx-auto">
-        {esim.ac && (
+        {esim?.ac && (
           <div>
-            <p className="text-xs text-muted-foreground mb-1">
-              Activation Code
-            </p>
+            <p className="text-xs text-muted-foreground mb-1">Activation Code</p>
             <div className="flex items-center justify-between gap-2">
               <code className="text-lg font-mono font-bold tracking-wider">
                 {esim.ac}
@@ -126,20 +124,16 @@ export function SuccessContent() {
                 <Copy className="h-4 w-4" />
               </button>
             </div>
-            {copied && (
-              <p className="text-xs text-[#7ecb8a] mt-1">Copied!</p>
-            )}
+            {copied && <p className="text-xs text-[#7ecb8a] mt-1">Copied!</p>}
           </div>
         )}
-
-        {esim.iccid && (
+        {esim?.iccid && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">ICCID</p>
-            <code className="text-sm font-mono">{esim.iccid}</code>
+            <code className="text-sm font-mono break-all">{esim.iccid}</code>
           </div>
         )}
-
-        {esim.orderNo && (
+        {esim?.orderNo && (
           <div>
             <p className="text-xs text-muted-foreground mb-1">Order Ref</p>
             <code className="text-sm font-mono">{esim.orderNo}</code>
@@ -147,7 +141,10 @@ export function SuccessContent() {
         )}
       </div>
 
-      <div className="pt-4">
+      <div className="pt-4 space-y-2">
+        <p className="text-xs text-muted-foreground">
+          Activation details also sent to your email.
+        </p>
         <Link
           href="/"
           className="inline-flex items-center gap-1 text-sm font-medium text-primary hover:underline"

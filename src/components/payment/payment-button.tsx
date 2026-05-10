@@ -62,11 +62,11 @@ function StripePaymentButton({ plan }: { plan: DisplayPlan }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const createPaymentIntent = useCallback(async () => {
+  const createPaymentIntent = useCallback(async (email: string) => {
     const res = await fetch("/api/create-payment-intent", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ packageCode: plan.id }),
+      body: JSON.stringify({ packageCode: plan.id, email }),
     });
     if (!res.ok) {
       const data = await res.json();
@@ -96,7 +96,8 @@ function StripePaymentButton({ plan }: { plan: DisplayPlan }) {
 
     pr.on("paymentmethod", async (ev) => {
       try {
-        const { clientSecret } = await createPaymentIntent();
+        const email = ev.payerEmail || "";
+        const { clientSecret, paymentIntentId } = await createPaymentIntent(email);
         const { error: confirmError } = await stripe.confirmCardPayment(
           clientSecret,
           { payment_method: ev.paymentMethod.id },
@@ -108,7 +109,7 @@ function StripePaymentButton({ plan }: { plan: DisplayPlan }) {
         } else {
           ev.complete("success");
           router.push(
-            `/checkout/success?payment_intent=${ev.paymentMethod.id}&plan=${plan.id}`
+            `/checkout/success?payment_intent=${paymentIntentId}`
           );
         }
       } catch (err) {
