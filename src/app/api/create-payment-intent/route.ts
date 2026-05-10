@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { fetchPackages, buildDisplayPlan } from "@/lib/esimaccess/catalog";
-import { stripe } from "@/lib/stripe/server";
+import { getStripe } from "@/lib/stripe/server";
 import { query, generateId } from "@/lib/d1/client";
 
 const requestSchema = z.object({
@@ -41,7 +41,7 @@ export async function POST(request: Request) {
     );
 
     // Create Stripe PaymentIntent
-    const paymentIntent = await stripe.paymentIntents.create({
+    const paymentIntent = await getStripe().paymentIntents.create({
       amount: plan.priceCents,
       currency: "usd",
       receipt_email: email || undefined,

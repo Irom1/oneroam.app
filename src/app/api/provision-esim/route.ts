@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { stripe } from "@/lib/stripe/server";
+import { getStripe } from "@/lib/stripe/server";
 import { purchaseEsim, queryEsim } from "@/lib/esimaccess/order";
 import { query, queryOne, generateId } from "@/lib/d1/client";
 import { sendEsimEmail } from "@/lib/email";
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const { paymentIntentId } = parsed.data;
 
     // 1. Verify payment with Stripe
-    const pi = await stripe.paymentIntents.retrieve(paymentIntentId);
+    const pi = await getStripe().paymentIntents.retrieve(paymentIntentId);
 
     if (pi.status !== "succeeded") {
       return NextResponse.json(

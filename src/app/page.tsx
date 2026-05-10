@@ -13,9 +13,10 @@ const MIN_GB = 10;
 const MAX_GB = 30;
 const MIN_DAYS = 30;
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const STRIPE_KEY =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+  "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00Ph4nPLfM";
+const stripePromise = loadStripe(STRIPE_KEY);
 
 function dedupePlans(plans: DisplayPlan[]): DisplayPlan[] {
   const seen = new Map<string, DisplayPlan>();

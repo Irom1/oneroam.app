@@ -8,9 +8,10 @@ import { PlanCard } from "@/components/plans/plan-card";
 import { PlanDetailModal } from "@/components/plans/plan-detail-modal";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 
-const stripePromise = loadStripe(
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
-);
+const STRIPE_KEY =
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
+  "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00Ph4nPLfM";
+const stripePromise = loadStripe(STRIPE_KEY);
 
 interface UsageData {
   totalVolume?: number;
