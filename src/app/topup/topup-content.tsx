@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import { ArrowLeft, Signal, Wifi, WifiOff } from "lucide-react";
+import { Signal, Wifi, WifiOff } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { PlanCard } from "@/components/plans/plan-card";
@@ -14,15 +14,6 @@ const STRIPE_KEY =
   "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00Ph4nPLfM";
 const stripePromise = loadStripe(STRIPE_KEY);
 
-interface OrderSummary {
-  id: string;
-  order_number: string;
-  package_name: string;
-  amount_cents: number;
-  esimaccess_order_no: string;
-  created_at: string;
-}
-
 interface UsageData {
   totalVolume?: number;
   usedVolume?: number;
@@ -31,106 +22,49 @@ interface UsageData {
 
 export function TopupContent() {
   const searchParams = useSearchParams();
-  const emailParam = searchParams.get("email") || "";
+  const iccidParam = searchParams.get("iccid") || "";
 
-  const [email, setEmail] = useState(emailParam);
-  const [orders, setOrders] = useState<OrderSummary[]>([]);
-  const [selectedOrder, setSelectedOrder] = useState<OrderSummary | null>(null);
-  const [iccid, setIccid] = useState("");
+  const [iccid, setIccid] = useState(iccidParam);
   const [plans, setPlans] = useState<DisplayPlan[]>([]);
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [detailPlan, setDetailPlan] = useState<DisplayPlan | null>(null);
 
-  // Auto-lookup if email is in URL
+  // Auto-load if ICCID from email link
   useEffect(() => {
-    if (emailParam.trim()) {
-      lookupEmail(emailParam.trim());
+    if (iccidParam.trim()) {
+      setIccid(iccidParam.trim());
+      lookup(iccidParam.trim());
     }
-  }, [emailParam]);
+  }, [iccidParam]);
 
-  const lookupEmail = async (emailToUse?: string) => {
-    const e = (emailToUse || email).trim();
-    if (!e) return;
+  const lookup = async (iccidToUse?: string) => {
+    const iccidVal = (iccidToUse || iccid).trim();
+    if (!iccidVal) return;
     setLoading(true);
     setError("");
-    setOrders([]);
-    setSelectedOrder(null);
     setPlans([]);
     setUsage(null);
 
     try {
-      const res = await fetch("/api/orders/by-email", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: e }),
-      });
-      const data = await res.json();
-
-      if (!res.ok || !data.orders?.length) {
-        setError("No orders found for this email.");
-      } else if (data.orders.length === 1) {
-        selectOrder(data.orders[0]);
-      } else {
-        setOrders(data.orders);
-      }
-    } catch {
-      setError("Network error. Try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const selectOrder = async (order: OrderSummary) => {
-    setSelectedOrder(order);
-    setOrders([]);
-    setError("");
-    setLoading(true);
-    setPlans([]);
-    setUsage(null);
-
-    try {
-      const iccidRes = await fetch("/api/esim-details", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ orderNo: order.esimaccess_order_no }),
-      });
-      const iccidData = await iccidRes.json();
-      const iccidVal = iccidData.iccid || "";
-
-      if (!iccidVal) {
-        setError("Could not retrieve eSIM details. It may not be active yet.");
-        setLoading(false);
-        return;
-      }
-      setIccid(iccidVal);
-
       const [usageRes, plansRes] = await Promise.all([
         fetch("/api/usage", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ iccid: iccidVal }) }),
         fetch("/api/topup/options", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ iccid: iccidVal }) }),
       ]);
-
       const usageData = await usageRes.json();
       const plansData = await plansRes.json();
-
       if (usageRes.ok) setUsage(usageData.usage || null);
       if (plansRes.ok && Array.isArray(plansData.plans)) {
         setPlans(plansData.plans.filter((p: DisplayPlan) => p.dataAmountGb >= 1));
+      } else if (!usageRes.ok) {
+        setError("eSIM not found. Check your ICCID.");
       }
     } catch {
       setError("Network error. Try again.");
     } finally {
       setLoading(false);
     }
-  };
-
-  const goBack = () => {
-    setSelectedOrder(null);
-    setOrders([]);
-    setPlans([]);
-    setUsage(null);
-    setError("");
   };
 
   const usagePercent =
@@ -142,69 +76,34 @@ export function TopupContent() {
     <Elements stripe={stripePromise}>
       <div className="mx-auto max-w-lg px-4 py-12 pb-24">
         <h1 className="text-2xl font-bold tracking-tight text-center">eSIM Top-up</h1>
-        <p className="mt-2 text-sm text-muted-foreground text-center">
-          Check your data usage and add more if needed
-        </p>
+        <p className="mt-2 text-sm text-muted-foreground text-center">Check your data usage and add more if needed</p>
 
-        {/* Email input */}
-        {!selectedOrder && orders.length === 0 && (
+        {/* ICCID input */}
+        {!iccidParam && (
           <div className="mt-8">
             <div className="flex gap-2">
               <input
-                type="email"
-                inputMode="email"
+                type="text"
+                inputMode="numeric"
                 autoCapitalize="off"
-                autoCorrect="off"
-                placeholder="Order email address"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && lookupEmail()}
+                placeholder="ICCID from your order email"
+                value={iccid}
+                onChange={(e) => setIccid(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && lookup()}
                 className="flex-1 h-12 px-4 rounded-xl border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
               />
               <button
-                onClick={() => lookupEmail()}
-                disabled={loading || !email.trim()}
+                onClick={() => lookup()}
+                disabled={loading || !iccid.trim()}
                 className="h-12 px-5 rounded-xl bg-foreground text-background font-medium text-sm hover:opacity-80 transition-opacity disabled:opacity-40 shrink-0"
               >
                 {loading ? "…" : "Look up"}
               </button>
             </div>
             {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
-          </div>
-        )}
 
-        {/* Multiple orders */}
-        {orders.length > 1 && (
-          <div className="mt-6 space-y-2">
-            <button onClick={goBack} className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-3 w-3" /> Back
-            </button>
-            <p className="text-sm font-medium text-muted-foreground">Select an order:</p>
-            {orders.map((o) => (
-              <button
-                key={o.id}
-                onClick={() => selectOrder(o)}
-                className="w-full text-left bg-card border border-border rounded-xl px-4 py-3 hover:border-primary/30 transition-colors"
-              >
-                <p className="font-medium text-sm">{o.package_name}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  {o.order_number} &middot; {new Date(o.created_at).toLocaleDateString()}
-                </p>
-              </button>
-            ))}
+            <EmailRecovery />
           </div>
-        )}
-
-        {/* Selected order */}
-        {selectedOrder && (
-          <>
-            <button onClick={goBack} className="mt-4 flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-3 w-3" /> {email}
-            </button>
-            <p className="mt-2 text-xs text-muted-foreground">
-              {selectedOrder.package_name} &middot; {selectedOrder.order_number}
-            </p>
-          </>
         )}
 
         {/* Usage bar */}
@@ -230,6 +129,13 @@ export function TopupContent() {
           </div>
         )}
 
+        {/* Loading state for auto-load */}
+        {loading && iccidParam && (
+          <div className="mt-6 text-center">
+            <p className="text-sm text-muted-foreground">Loading usage data…</p>
+          </div>
+        )}
+
         {/* Topup plans */}
         {plans.length > 0 && (
           <div className="mt-6">
@@ -242,13 +148,57 @@ export function TopupContent() {
           </div>
         )}
 
-        {selectedOrder && !loading && plans.length === 0 && !error && (
+        {!loading && plans.length === 0 && !error && (iccidParam || iccid) && (
           <p className="mt-6 text-center text-sm text-muted-foreground">No top-up plans available for this eSIM.</p>
         )}
       </div>
 
       {detailPlan && <PlanDetailModal plan={detailPlan} onClose={() => setDetailPlan(null)} onBuy={() => setDetailPlan(null)} />}
     </Elements>
+  );
+}
+
+function EmailRecovery() {
+  const [email, setEmail] = useState("");
+  const [sending, setSending] = useState(false);
+  const [sent, setSent] = useState(false);
+  const [err, setErr] = useState("");
+
+  const sendEmail = async () => {
+    if (!email.trim()) return;
+    setSending(true); setErr("");
+    const res = await fetch("/api/topup/email-iccids", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: email.trim() }),
+    });
+    const d = await res.json();
+    if (d.ok) setSent(true);
+    else setErr(d.error || "No orders found");
+    setSending(false);
+  };
+
+  return (
+    <div className="mt-6 pt-4 border-t border-border">
+      <p className="text-xs text-muted-foreground mb-2">Don&apos;t have your ICCID? Enter your order email and we&apos;ll send your details.</p>
+      <div className="flex gap-2">
+        <input
+          type="email"
+          placeholder="Order email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="flex-1 h-10 px-3 rounded-lg border border-border bg-card text-xs placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30"
+        />
+        <button
+          onClick={sendEmail}
+          disabled={sending || sent || !email.trim()}
+          className="h-10 px-4 rounded-lg border border-border text-xs hover:bg-muted transition-colors disabled:opacity-40 shrink-0"
+        >
+          {sent ? "Sent!" : sending ? "…" : "Send"}
+        </button>
+      </div>
+      {err && <p className="mt-1 text-[11px] text-destructive">{err}</p>}
+    </div>
   );
 }
 

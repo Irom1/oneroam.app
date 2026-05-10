@@ -45,19 +45,11 @@ export default function AdminPage() {
 
   const authenticate = useCallback(async () => {
     try {
-      const credIdB64 = localStorage.getItem("oneroam_admin_credential");
-      if (!credIdB64) throw new Error("No credential");
-
-      // Decode base64url to ArrayBuffer
-      const bin = atob(credIdB64.replace(/-/g, "+").replace(/_/g, "/"));
-      const bytes = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-
+      // Empty allowCredentials — OS finds passkey from iCloud Keychain
       const credential = (await navigator.credentials.get({
         publicKey: {
           challenge: new Uint8Array(32),
           rpId: "oneroam.app",
-          allowCredentials: [{ id: bytes, type: "public-key" }],
           timeout: 60000,
           userVerification: "preferred",
         },
@@ -70,7 +62,7 @@ export default function AdminPage() {
         });
         const d = await res.json();
         if (d.ok) setAuthed(true);
-        else setError("Authentication failed");
+        else setError("Authentication failed - set one up first.");
       }
     } catch { setError("Passkey required to access dashboard"); }
     setAuthing(false);

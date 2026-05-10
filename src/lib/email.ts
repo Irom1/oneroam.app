@@ -23,8 +23,9 @@ export async function sendEsimEmail({
     return;
   }
 
-  const encodedEmail = encodeURIComponent(to);
-  const topupUrl = `https://oneroam.app/topup?email=${encodedEmail}`;
+  const topupUrl = iccid
+    ? `https://oneroam.app/topup?iccid=${encodeURIComponent(iccid)}`
+    : `https://oneroam.app/topup`;
 
   // ... rest stays same
 
