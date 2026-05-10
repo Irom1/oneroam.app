@@ -248,7 +248,7 @@ export default function AdminPage() {
                   <td className="px-4 py-2 text-xs text-right">${((order.amountCents || 0) / 100).toFixed(2)}</td>
                   <td className="px-4 py-2 text-center">
                     <span className={`text-[11px] px-2 py-0.5 rounded-full ${
-                      order.status === "fulfilled" ? "bg-[#d4e8d4] text-[#2d5a2d]" :
+                      order.status === "completed" ? "bg-[#d4e8d4] text-[#2d5a2d]" :
                       order.status === "failed" ? "bg-red-100 text-red-700" :
                       "bg-amber-100 text-amber-700"
                     }`}>

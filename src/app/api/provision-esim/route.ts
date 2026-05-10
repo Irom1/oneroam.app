@@ -42,7 +42,7 @@ export async function POST(request: Request) {
     // 2. Check if already provisioned
     if (orderId) {
       const existing = await queryOne<Record<string, unknown>>(
-        "SELECT * FROM orders WHERE id = ? AND status = 'fulfilled'",
+        "SELECT * FROM orders WHERE id = ? AND esimaccess_order_no IS NOT NULL",
         [orderId]
       );
 
@@ -91,7 +91,7 @@ export async function POST(request: Request) {
     // 4. Update order in D1
     if (orderId) {
       await query(
-        `UPDATE orders SET status = 'fulfilled', esimaccess_order_no = ?, stripe_payment_intent_id = ?, updated_at = datetime('now')
+        `UPDATE orders SET status = 'completed', esimaccess_order_no = ?, stripe_payment_intent_id = ?, updated_at = datetime('now')
          WHERE id = ?`,
         [orderNo, paymentIntentId, orderId]
       );
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
       const amount = pi.amount;
       await query(
         `INSERT INTO orders (id, order_number, customer_email, stripe_payment_intent_id, esimaccess_order_no, package_code, package_name, amount_cents, total_cents, status)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'fulfilled')`,
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'completed')`,
         [newId, newOrderNumber, pi.receipt_email || "", paymentIntentId, orderNo, packageCode, pi.metadata?.packageName || packageCode, amount, amount]
       );
     }

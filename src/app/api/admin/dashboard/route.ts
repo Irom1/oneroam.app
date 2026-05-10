@@ -23,7 +23,7 @@ export async function GET() {
 
     // Revenue totals from D1
     const revenueResult = await query<{ total: number }>(
-      "SELECT COALESCE(SUM(amount_cents), 0) as total FROM orders WHERE status = 'fulfilled'"
+      "SELECT COALESCE(SUM(amount_cents), 0) as total FROM orders WHERE status = 'completed'"
     );
     const totalRevenue = revenueResult.results[0]?.total || 0;
 

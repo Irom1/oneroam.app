@@ -65,7 +65,7 @@ export async function POST(request: Request) {
             packageName,
             pi.amount,
             pi.amount,
-            orderNo ? "fulfilled" : "failed",
+            orderNo ? "completed" : "failed",
           ]
         );
 

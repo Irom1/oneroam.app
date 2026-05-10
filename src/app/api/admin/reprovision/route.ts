@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     const result = await purchaseEsim(packageCode, transactionId);
 
     await query(
-      "UPDATE orders SET esimaccess_order_no = ?, status = 'fulfilled', updated_at = datetime('now') WHERE id = ?",
+      "UPDATE orders SET esimaccess_order_no = ?, status = 'completed', updated_at = datetime('now') WHERE id = ?",
       [result.orderNo, orderId]
     );
 

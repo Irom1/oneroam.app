@@ -10,7 +10,7 @@ export async function POST(request: Request) {
 
     const result = await query<Record<string, unknown>>(
       `SELECT id, order_number, customer_email, esimaccess_order_no, package_code, package_name, amount_cents, status, created_at
-       FROM orders WHERE customer_email = ? AND status = 'fulfilled'
+       FROM orders WHERE customer_email = ? AND status = 'completed'
        ORDER BY created_at DESC`,
       [email.toLowerCase().trim()]
     );

@@ -22,7 +22,7 @@ export async function GET(request: Request) {
 
     // If fulfilled and has orderNo, query eSIM details
     let esimDetails = {};
-    if (order.status === "fulfilled" && order.esimaccess_order_no) {
+    if (order.status === "completed" && order.esimaccess_order_no) {
       try {
         const details = await queryEsim(order.esimaccess_order_no as string);
         esimDetails = {
