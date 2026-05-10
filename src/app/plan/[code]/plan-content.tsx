@@ -20,49 +20,41 @@ const STRIPE_KEY =
 const stripePromise = loadStripe(STRIPE_KEY);
 
 export function PlanPageContent({
-  initialPlanCode,
+  initialPlan,
 }: {
-  initialPlanCode: string;
+  initialPlan: DisplayPlan | null;
 }) {
   const router = useRouter();
 
   const [plans, setPlans] = useState<DisplayPlan[]>([]);
-  const [detailPlan, setDetailPlan] = useState<DisplayPlan | null>(null);
+  const [detailPlan, setDetailPlan] = useState<DisplayPlan | null>(initialPlan);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [search, setSearch] = useState("");
-  const [autoOpened, setAutoOpened] = useState(false);
 
   useEffect(() => {
     fetch("/api/plans")
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          const filtered = data
-            .filter(
-              (p: DisplayPlan) =>
-                p.dataAmountGb >= MIN_GB &&
-                p.dataAmountGb <= MAX_GB &&
-                p.validityDays >= MIN_DAYS
-            )
-            .sort((a, b) => a.priceCents - b.priceCents);
-          setPlans(filtered);
-
-          // Auto-open the plan from the URL
-          if (!autoOpened) {
-            const match = filtered.find((p) => p.id === initialPlanCode);
-            if (match) {
-              setDetailPlan(match);
-              setAutoOpened(true);
-            }
-          }
+          setPlans(
+            data
+              .filter(
+                (p: DisplayPlan) =>
+                  p.dataAmountGb >= MIN_GB &&
+                  p.dataAmountGb <= MAX_GB &&
+                  p.validityDays >= MIN_DAYS
+              )
+              .sort((a, b) => a.priceCents - b.priceCents)
+          );
         } else {
           setError(data.error || "Failed to load plans");
         }
       })
       .catch(() => setError("Could not load plans"))
       .finally(() => setLoading(false));
-  }, [initialPlanCode, autoOpened]);
+  }, []);
 
   const selectPlan = useCallback(
     (plan: DisplayPlan) => {

@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { fetchPackages, buildDisplayPlan } from "@/lib/esimaccess/catalog";
 import { PlanPageContent } from "./plan-content";
+import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 
 type Props = { params: Promise<{ code: string }> };
 
@@ -36,6 +37,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function PlanPage({ params }: Props) {
   const { code } = await params;
 
+  // Fetch plan server-side so there's no flash
+  let initialPlan: DisplayPlan | null = null;
+  try {
+    const pkgs = await fetchPackages();
+    const pkg = pkgs.find((p) => p.packageCode === code);
+    if (pkg) initialPlan = buildDisplayPlan(pkg);
+  } catch {
+    // Plan won't preload — client will show error
+  }
+
   return (
     <Suspense
       fallback={
@@ -48,7 +59,7 @@ export default async function PlanPage({ params }: Props) {
         </div>
       }
     >
-      <PlanPageContent initialPlanCode={code} />
+      <PlanPageContent initialPlan={initialPlan} />
     </Suspense>
   );
 }
