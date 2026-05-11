@@ -3,15 +3,15 @@ import { ArrowRight, Globe, Zap, Wifi } from "lucide-react";
 export function HeroSection() {
   return (
     <section className="relative overflow-hidden pb-16 pt-8 sm:pt-16 lg:pt-24">
-      {/* Blue gradient background — darker in dark mode */}
+      {/* Blue gradient background — hidden in dark mode */}
       <div
-        className="absolute inset-0 -z-10"
+        className="absolute inset-0 -z-10 dark:hidden"
         style={{
           background: "linear-gradient(135deg, #D6E8F0, #A8C8DA)",
         }}
       />
-      {/* Dark mode overlay on hero gradient */}
-      <div className="absolute inset-0 -z-10 dark:bg-[#1a1a1a]/60" />
+      {/* Dark mode background */}
+      <div className="absolute inset-0 -z-10 hidden dark:block" style={{ background: "linear-gradient(135deg, #1a1a2e, #16213e)" }} />
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
@@ -24,7 +24,7 @@ export function HeroSection() {
             </h1>
             <p className="mt-5 text-base sm:text-lg text-[#4a4a4a] dark:text-[#b0b0b0] max-w-md leading-relaxed">
               Buy an eSIM in seconds with Apple Pay. Half the price of Airalo
-              and Holafly — 10–30GB plans in 100+ countries, no signup needed.
+              and Holafly, plans in 100+ countries & no signup needed.
             </p>
             <div className="mt-8 flex items-center gap-3">
               <a

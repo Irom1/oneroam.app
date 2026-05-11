@@ -3,19 +3,17 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { APP_NAME } from "@/lib/constants";
-import { Sun, Moon } from "lucide-react";
+import { CreditCard } from "lucide-react";
 
 export function Header() {
   const [scrolled, setScrolled] = useState(false);
-  const [dark, setDark] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem("oneroam-dark-mode");
-    if (stored !== null) {
-      const isDark = stored === "true";
-      setDark(isDark);
-      document.documentElement.classList.toggle("dark", isDark);
-    }
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const apply = () => document.documentElement.classList.toggle("dark", mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
   }, []);
 
   useEffect(() => {
@@ -24,13 +22,6 @@ export function Header() {
     onScroll();
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
-
-  const toggleDark = () => {
-    const next = !dark;
-    setDark(next);
-    document.documentElement.classList.toggle("dark", next);
-    localStorage.setItem("oneroam-dark-mode", String(next));
-  };
 
   return (
     <header
@@ -55,17 +46,17 @@ export function Header() {
         </Link>
 
         <div className="flex items-center gap-2">
-          <button
-            onClick={toggleDark}
-            className={`inline-flex items-center justify-center w-9 h-9 rounded-full transition-all ${
+          <Link
+            href="/topup"
+            className={`inline-flex items-center gap-1.5 px-3 h-9 rounded-full text-sm font-medium transition-all ${
               scrolled
                 ? "text-[#8e8b84] hover:text-[#1a1a1a] hover:bg-[#f2efe9] dark:text-[#8e8e93] dark:hover:text-white dark:hover:bg-[#2a2a2a]"
                 : "text-[#4a4a4a] hover:text-[#1a1a1a] hover:bg-black/5 dark:text-white/70 dark:hover:text-white dark:hover:bg-white/10"
             }`}
-            aria-label="Toggle dark mode"
           >
-            {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </button>
+            <CreditCard className="h-4 w-4" />
+            <span className="hidden sm:inline">Top Up</span>
+          </Link>
         </div>
       </div>
     </header>

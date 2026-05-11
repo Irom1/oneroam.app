@@ -4,21 +4,18 @@ import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Search, X, ArrowRight } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
-import { loadStripe } from "@stripe/stripe-js";
 import { HeroSection } from "@/components/landing/hero-section";
 import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { PlanCard } from "@/components/plans/plan-card";
 import { PlanDetailModal } from "@/components/plans/plan-detail-modal";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
+import { getStripe } from "@/lib/stripe/client";
 
 const MIN_GB = 10;
 const MAX_GB = 30;
 const MIN_DAYS = 30;
 
-const STRIPE_KEY =
-  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-  "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00P4nPLfM";
-const stripePromise = loadStripe(STRIPE_KEY);
+const stripePromise = getStripe();
 
 export function HomeContent() {
   const router = useRouter();
