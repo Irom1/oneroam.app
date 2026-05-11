@@ -37,7 +37,7 @@ export function Header() {
           className={`inline-flex items-center px-3.5 h-10 rounded-[20px] transition-all duration-300 text-[#1a1a1a] dark:text-white ${
             scrolled
               ? "bg-white dark:bg-[#252525] shadow-sm"
-              : "bg-white/50 dark:bg-white/10 backdrop-blur-sm shadow-sm"
+              : ""
           }`}
         >
           <span className="text-base font-extrabold tracking-tight">
