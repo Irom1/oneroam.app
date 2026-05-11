@@ -2,7 +2,11 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { X, Globe, Shield, ChevronDown, ChevronUp } from "lucide-react";
-import { useStripe } from "@stripe/react-stripe-js";
+import {
+  PaymentRequestButtonElement,
+  useStripe,
+} from "@stripe/react-stripe-js";
+import type { PaymentRequest } from "@stripe/stripe-js";
 import { useRouter } from "next/navigation";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
 import { formatPrice, formatDataAmount } from "@/lib/utils";
@@ -154,7 +158,8 @@ function ModalPaymentButton({
 }) {
   const stripe = useStripe();
   const router = useRouter();
-  const [loading, setLoading] = useState(false);
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
+  const [checking, setChecking] = useState(true);
   const [error, setError] = useState("");
 
   const createPaymentIntent = useCallback(async (email: string) => {
@@ -170,10 +175,55 @@ function ModalPaymentButton({
     return res.json();
   }, [plan.id]);
 
-  const handlePay = useCallback(async () => {
+  // Try canMakePayment on mount (works on full page load)
+  useEffect(() => {
     if (!stripe) return;
 
-    setLoading(true);
+    let cancelled = false;
+    const pr = stripe.paymentRequest({
+      country: "US",
+      currency: "usd",
+      total: { label: `${plan.name} (tax incl.)`, amount: plan.priceCents },
+      requestPayerName: false,
+      requestPayerEmail: true,
+    });
+
+    pr.canMakePayment().then((result) => {
+      if (cancelled) return;
+      if (result) setPaymentRequest(pr);
+      setChecking(false);
+    });
+
+    const handlePaymentMethod = async (ev: any) => {
+      try {
+        const email = ev.payerEmail || "";
+        const { clientSecret, paymentIntentId } = await createPaymentIntent(email);
+        const { error: confirmError } = await stripe.confirmPayment({
+          clientSecret,
+          confirmParams: { payment_method: ev.paymentMethod.id },
+          redirect: "if_required",
+        });
+        if (confirmError) {
+          ev.complete("fail");
+          setError(confirmError.message || "Payment failed");
+        } else {
+          ev.complete("success");
+          router.push(`/checkout/success?payment_intent=${paymentIntentId}`);
+        }
+      } catch (err) {
+        ev.complete("fail");
+        setError(err instanceof Error ? err.message : "Something went wrong");
+      }
+    };
+
+    pr.on("paymentmethod", handlePaymentMethod);
+
+    return () => { cancelled = true; };
+  }, [stripe, plan, createPaymentIntent, router]);
+
+  // Fallback: click handler for when canMakePayment needs a user gesture
+  const handleFallbackPay = useCallback(async () => {
+    if (!stripe) return;
     setError("");
 
     const pr = stripe.paymentRequest({
@@ -187,8 +237,6 @@ function ModalPaymentButton({
     try {
       const result = await pr.canMakePayment();
       if (!result) {
-        setLoading(false);
-        // Fallback: redirect to card payment via Stripe Checkout
         const { clientSecret } = await createPaymentIntent("");
         await stripe.confirmPayment({
           clientSecret,
@@ -219,37 +267,49 @@ function ModalPaymentButton({
         }
       });
 
-      setLoading(false);
       await pr.show();
     } catch (err) {
-      setLoading(false);
       setError(err instanceof Error ? err.message : "Something went wrong");
     }
   }, [stripe, plan, createPaymentIntent, router]);
 
+  if (checking) {
+    return (
+      <div className="h-12 rounded-xl bg-muted animate-pulse flex items-center justify-center">
+        <span className="text-sm text-muted-foreground">Loading…</span>
+      </div>
+    );
+  }
+
   return (
     <div>
       {error && <p className="text-sm text-destructive text-center mb-2">{error}</p>}
-      <button
-        onClick={handlePay}
-        disabled={loading}
-        className="w-full h-12 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-colors disabled:opacity-60"
-        style={{
-          background: "linear-gradient(135deg, #f84f5a, #e8454f)",
-          boxShadow: "0 4px 14px rgba(248, 79, 90, 0.35)",
-        }}
-      >
-        {loading ? (
-          <span>Processing…</span>
-        ) : (
-          <>
-            <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z" fill="currentColor"/>
-            </svg>
-            <span>{`Pay ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(plan.priceCents / 100)}`}</span>
-          </>
-        )}
-      </button>
+      {paymentRequest ? (
+        <div className="overflow-hidden rounded-xl">
+          <PaymentRequestButtonElement
+            options={{
+              paymentRequest,
+              style: {
+                paymentRequestButton: { type: "buy", theme: "dark", height: "48px" },
+              },
+            }}
+          />
+        </div>
+      ) : (
+        <button
+          onClick={handleFallbackPay}
+          className="w-full h-12 rounded-xl font-semibold text-sm text-white flex items-center justify-center gap-2 transition-colors"
+          style={{
+            background: "linear-gradient(135deg, #f84f5a, #e8454f)",
+            boxShadow: "0 4px 14px rgba(248, 79, 90, 0.35)",
+          }}
+        >
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15l-4-4 1.41-1.41L11 14.17l6.59-6.59L19 9l-8 8z" fill="currentColor"/>
+          </svg>
+          <span>{`Pay ${new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(plan.priceCents / 100)}`}</span>
+        </button>
+      )}
     </div>
   );
 }

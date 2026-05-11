@@ -25,7 +25,7 @@ export function Header() {
 
   return (
     <header
-      className={`sticky top-0 z-40 transition-all duration-300 ${
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         scrolled
           ? "bg-white/90 backdrop-blur-md border-b border-[#e8e4de]/60 dark:bg-[#1a1a1a]/90 dark:border-[#333]"
           : "bg-transparent border-transparent"
@@ -37,7 +37,7 @@ export function Header() {
           className={`inline-flex items-center px-3.5 h-10 rounded-[20px] transition-all duration-300 text-[#1a1a1a] dark:text-white ${
             scrolled
               ? "bg-white dark:bg-[#252525] shadow-sm"
-              : ""
+              : "bg-white/50 dark:bg-white/10 backdrop-blur-sm shadow-sm"
           }`}
         >
           <span className="text-base font-extrabold tracking-tight">
