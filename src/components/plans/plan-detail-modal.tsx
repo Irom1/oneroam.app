@@ -20,27 +20,26 @@ type Props = {
 export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
   const [showCoverage, setShowCoverage] = useState(false);
 
-  // Lock body scroll when modal is open
   useEffect(() => {
     document.body.style.overflow = "hidden";
     return () => { document.body.style.overflow = ""; };
   }, []);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-3 sm:p-0">
       <div
         className="absolute inset-0 bg-black/30 backdrop-blur-sm"
         onClick={onClose}
       />
 
-      <div className="relative w-full sm:max-w-lg bg-card rounded-t-3xl sm:rounded-3xl border border-border shadow-2xl max-h-[85vh] overflow-y-auto">
+      <div className="relative w-full sm:max-w-lg bg-card rounded-3xl border border-border shadow-2xl max-h-[85vh] overflow-y-auto">
 
         {/* Header */}
         <div className="flex items-start justify-between p-5 pb-2">
           <div className="flex items-center gap-3 min-w-0">
             <span className="text-3xl shrink-0">{plan.flagEmoji}</span>
             <div className="min-w-0">
-              <h2 className="text-lg font-bold truncate">{plan.name}</h2>
+              <h2 className="text-lg font-bold text-foreground truncate">{plan.name}</h2>
               <p className="text-sm text-muted-foreground truncate">
                 {plan.locationName}
                 {plan.isRegional && <span> &middot; {plan.countryCount} countries</span>}
@@ -54,28 +53,28 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
 
         {/* Price */}
         <div className="px-5 pb-3">
-          <p className="text-3xl font-bold tracking-tight">{formatPrice(plan.priceCents)}</p>
+          <p className="text-3xl font-bold tracking-tight text-foreground">{formatPrice(plan.priceCents)}</p>
           <p className="text-xs text-muted-foreground mt-0.5">tax included</p>
         </div>
 
         {/* Specs */}
         <div className="px-5 space-y-4">
           <div className="grid grid-cols-3 gap-2.5">
-            <div className="bg-[#a8d8ea]/20 rounded-xl p-3 text-center">
-              <p className="text-lg font-bold">{formatDataAmount(plan.dataAmountGb)}</p>
+            <div className="bg-[#d6e8f0]/40 dark:bg-[#2a3a4a] rounded-2xl p-3 text-center">
+              <p className="text-lg font-bold text-foreground">{formatDataAmount(plan.dataAmountGb)}</p>
               <p className="text-[11px] text-muted-foreground">Data</p>
             </div>
-            <div className="bg-[#f8e8d0]/40 rounded-xl p-3 text-center">
-              <p className="text-lg font-bold">{plan.validityDays}d</p>
+            <div className="bg-[#fef0d0]/60 dark:bg-[#3a3520] rounded-2xl p-3 text-center">
+              <p className="text-lg font-bold text-foreground">{plan.validityDays}d</p>
               <p className="text-[11px] text-muted-foreground">Validity</p>
             </div>
-            <div className="bg-[#d4e8d4]/40 rounded-xl p-3 text-center">
-              <p className="text-lg font-bold">{plan.speed}</p>
+            <div className="bg-[#d4e8d4]/40 dark:bg-[#2a3a2a] rounded-2xl p-3 text-center">
+              <p className="text-lg font-bold text-foreground">{plan.speed}</p>
               <p className="text-[11px] text-muted-foreground">Speed</p>
             </div>
           </div>
 
-          {/* Country coverage — expandable for regional plans */}
+          {/* Country coverage */}
           {plan.coverage.length > 0 && (
             <div>
               <button
@@ -96,7 +95,7 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
                 {plan.coverage.map((country) => (
                   <div key={country.locationCode} className="bg-muted/40 rounded-lg px-3 py-2">
                     <div className="flex items-center justify-between">
-                      <span className="text-xs font-medium">{country.locationName}</span>
+                      <span className="text-xs font-medium text-foreground">{country.locationName}</span>
                       <span className="text-[11px] text-muted-foreground">
                         {country.operators.map((o) => `${o.name} ${o.networkType}`).join(", ")}
                       </span>
@@ -140,7 +139,7 @@ export function PlanDetailModal({ plan, onClose, onBuy }: Props) {
             </div>
           </div>
 
-          {/* Payment button with padding below */}
+          {/* Payment button */}
           <div className="pb-6 pt-1">
             <ModalPaymentButton plan={plan} onClose={onClose} />
           </div>

@@ -2,10 +2,11 @@
 
 import { useState, useEffect, useMemo, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Search, X } from "lucide-react";
+import { Search, X, ArrowRight } from "lucide-react";
 import { Elements } from "@stripe/react-stripe-js";
 import { loadStripe } from "@stripe/stripe-js";
 import { HeroSection } from "@/components/landing/hero-section";
+import { HowItWorksSection } from "@/components/landing/how-it-works-section";
 import { PlanCard } from "@/components/plans/plan-card";
 import { PlanDetailModal } from "@/components/plans/plan-detail-modal";
 import type { DisplayPlan } from "@/lib/esimaccess/catalog";
@@ -16,7 +17,7 @@ const MIN_DAYS = 30;
 
 const STRIPE_KEY =
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ||
-  "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00Ph4nPLfM";
+  "pk_live_51TVNdhCHYA58HEMJhvqk25WmnU1Wcj09Y1n2yMVZwo3jGyTeuvbiQZY6tHKMur8J4x0t7LxQVShtiuL1AjgUg0bM00P4nPLfM";
 const stripePromise = loadStripe(STRIPE_KEY);
 
 export function HomeContent() {
@@ -79,14 +80,24 @@ export function HomeContent() {
     <Elements stripe={stripePromise}>
       <HeroSection />
 
-      <section className="pb-24">
-        <div className="mx-auto max-w-3xl px-3 sm:px-6">
+      <HowItWorksSection />
+
+      {/* Plans section */}
+      <section id="plans" className="pb-24">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-center text-foreground mb-2">
+            Browse eSIM plans
+          </h2>
+          <p className="text-sm text-muted-foreground text-center mb-8">
+            10–30GB &middot; 30+ day validity &middot; 100+ countries
+          </p>
+
           {loading ? (
             <div className="space-y-2">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div
                   key={i}
-                  className="rounded-xl border border-border bg-card p-4 h-24 animate-pulse"
+                  className="rounded-2xl border border-border/60 bg-card p-4 h-24 animate-pulse"
                 >
                   <div className="h-4 w-20 bg-muted rounded mb-2" />
                   <div className="h-5 w-40 bg-muted rounded" />
@@ -100,18 +111,18 @@ export function HomeContent() {
           ) : (
             <>
               <div className="relative mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
                   placeholder="Search country or region…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full h-11 pl-9 pr-4 rounded-xl border border-border bg-card text-base placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all"
+                  className="w-full h-12 pl-10 pr-10 rounded-2xl border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#f84f5a]/20 focus:border-[#f84f5a] transition-all shadow-sm"
                 />
                 {search && (
                   <button
                     onClick={() => setSearch("")}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -141,6 +152,34 @@ export function HomeContent() {
               )}
             </>
           )}
+        </div>
+      </section>
+
+      {/* Pre-footer CTA */}
+      <section className="pb-16 sm:pb-20">
+        <div className="mx-auto max-w-3xl px-4 sm:px-6">
+          <div
+            className="rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden"
+            style={{
+              background: "linear-gradient(135deg, #f84f5a, #e8454f)",
+              boxShadow: "0 20px 60px rgba(248, 79, 90, 0.3)",
+            }}
+          >
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
+              Ready to roam?
+            </h2>
+            <p className="mt-3 text-white/80 text-sm sm:text-base max-w-sm mx-auto">
+              Buy an eSIM now and land connected. No account, no hassle — just
+              data that works.
+            </p>
+            <a
+              href="#plans"
+              className="mt-6 inline-flex items-center gap-2 px-7 py-3.5 rounded-full bg-white text-[#f84f5a] font-semibold text-sm hover:bg-white/95 transition-colors"
+            >
+              View plans
+              <ArrowRight className="h-4 w-4" />
+            </a>
+          </div>
         </div>
       </section>
 
